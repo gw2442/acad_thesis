@@ -1,0 +1,159 @@
+---
+title: "acad_thesis"
+output: html_document
+date: "2023-03-28"
+---
+
+```{r}
+library(dplyr)
+library(tidyverse)
+```
+
+### Importing and cleaning data
+
+```{r}
+acad_data = read_csv(file = "./data/REDCAP.csv") %>%
+  janitor::clean_names() 
+  skimr::skim(acad_data)
+```
+
+The CSV file was downloaded from the ACAD dataset. The dataset `acad_data` has 327 observations and 660 variables. Of the 660 varaibles, 491 are character variables, 70 are logical, and 99 are numeric. The relevant variables were then selected for further cleaning.
+
+```{r}
+acad_clean = acad_data %>%
+  select(
+    "acad_id", "degree", "gender", "country_a", "generation", 
+    
+    "parta_a201", "parta_a202", "parta_a203", "parta_a204", "parta_a205", "parta_a206", "parta_a207", "parta_a208", "parta_a209", "parta_a210", "parta_a211", "parta_a212", "parta_a213", "parta_a214", "parta_a2score",
+    
+    "memory", "orient", "judgment", "commun", "homehobb", "perscare", "cdr_sum", "cdrglob", "comport", "cdrlang",
+    
+    "bills", "taxes", "shopping", "games", "stove", "mealprep", "events", "payattn", "remdates", "travel", "fas", 
+    
+    "clock1", "clock2", "clock3", "clock4", "clock5", "clock6", "clock7", "clock8", "clock9", "clock10", "clock11", "clock12", "clock13", "clock14", "clock15", "clock_t",
+    
+    "word1_t1", "word2_t1", "word3_t1", "word4_t1", "word5_t1", "word6_t1", "word7_t1", "word8_t1", "word9_t1", "word10_t1", "comt_t1","word1_t2", "word2_t2", "word3_t2", "word4_t2", "word5_t2", "word6_t2", "word7_t2", "word8_t2", "word9_t2", "word10_t2", "comt_t2", "word1_t3", "word2_t3", "word3_t3", "word4_t3", "word5_t3", "word6_t3", "word7_t3", "word8_t3", "word9_t3", "word10_t3", "comt_t3","word1_d", "word2_d", "word3_d", "word4_d", "word5_d", "word6_d", "word7_d", "word8_d", "word9_d", "word10_d", "comt_d", "item1", "item2", "word2_dr", "word3_dr", "item4", "word4_dr", "item5", "item6", "word5_dr", "word6_dr", "item7", "word7_dr", "item8", "word8_dr", "item9", "word9_dr", "word10_dr", "item10", "comt_dr",
+    
+    "condition1", "condition2", "condition3", "condition4", "condition5", "condition6", "condition7", "condition8", "condition9", "condition10", "condition11", "condition12", "condition13", "condition14", "condition15", "med_imp", "anymeds", "partc_parent", "partc_sib"
+  ) %>%
+  mutate(
+    degree = factor(degree, levels = c("Grade school or less", 
+                                       "Some high school", 
+                                       "High school or G.E.D.", 
+                                       "Graduate degree (Master's, Doctoral, or Professional degree)")),
+    country_a = as.character(country_a),
+    country_a = recode(country_a, 
+                       "156" = "China", 
+                       "410" = "South Korea", 
+                       "124" = "Canada", 
+                       "344" = "Hong Kong", 
+                       "158" = "Taiwan", 
+                       "360" = "Indonesia", 
+                       "458" = "Malaysia", 
+                       "888" = "Other", 
+                       "704" = "Vietnam" ),    
+    generation = factor(generation, labels = c("1st", 
+                                               "2nd", 
+                                               "3rd", 
+                                               "4th")),
+    parta_a202 = recode(parta_a202,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a203 = recode(parta_a203,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a204 = recode(parta_a204,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a205 = recode(parta_a205,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a206 = recode(parta_a206,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a207 = recode(parta_a207,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a208 = recode(parta_a208,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a209 = recode(parta_a209,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a210 = recode(parta_a210,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a211 = recode(parta_a211,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a212 = recode(parta_a212,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a213 = recode(parta_a213,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a214 = recode(parta_a214,
+                        "0 No" = 0,
+                        "1 Yes" = 1),
+    parta_a201 = ifelse(is.na(parta_a201), 0, parta_a201),
+    parta_a202 = ifelse(is.na(parta_a202), 0, parta_a202),
+    parta_a203 = ifelse(is.na(parta_a203), 0, parta_a203),
+    parta_a204 = ifelse(is.na(parta_a204), 0, parta_a204),
+    parta_a205 = ifelse(is.na(parta_a205), 0, parta_a205),
+    parta_a206 = ifelse(is.na(parta_a206), 0, parta_a206),
+    parta_a207 = ifelse(is.na(parta_a207), 0, parta_a207),
+    parta_a208 = ifelse(is.na(parta_a208), 0, parta_a208),
+    parta_a209 = ifelse(is.na(parta_a209), 0, parta_a209),
+    parta_a210 = ifelse(is.na(parta_a210), 0, parta_a210),
+    parta_a211 = ifelse(is.na(parta_a211), 0, parta_a211),
+    parta_a212 = ifelse(is.na(parta_a212), 0, parta_a212),
+    parta_a213 = ifelse(is.na(parta_a213), 0, parta_a213),
+    parta_a214 = ifelse(is.na(parta_a214), 0, parta_a214),
+    parta_a2score = parta_a201 + parta_a202 + parta_a203 + parta_a204 + parta_a205 + parta_a206 + parta_a207 + parta_a208 + parta_a209 + parta_a210 + parta_a211 + parta_a212 + parta_a213 + parta_a214,
+    memory = recode(memory, 
+                    "Moderate - 2 Severe memory loss; only highly learned material retained; new material rapidly lost." = 2),
+    orient = recode(orient,
+                    "None - 0 Fully oriented" = 0,
+                    "Questionable - 0.5 Fully oriented except for slight difficulty with time relationships." = 0.5,
+                    "Mild - 1 Moderate difficulty with time relationships; oriented for place at examination; may have geographic disorientation elsewhere." = 1,
+                    "Moderate - 2 Severe difficulty with time relationships; usually disoriented to time, often to place." = 2,
+                    "Severe - 3 Oriented to person only." = 3),
+    judgment = recode(judgment,
+                       "None - 0 Solves everyday problems, handles business & financial affairs well; judgment good in relation to past performance." = 0,
+                      "Questionable - 0.5 Slight impairment in solving problems, similarities, and differences." = 0.5,
+                      "Mild - 1 Moderate difficulty in handling problems, similarities, and differences; social judgment usually maintained." = 1,
+                      "Moderate - 2 Severely impaired in handling problems, similarities, and differences; social judgment usually impaired." = 2,
+                      "Severe - 3 Unable to make judgments or solve problems." = 3),
+    commun = recode(commun,
+                    "None - 0 Independent function at usual level in job, shopping, volunteer and social groups." = 0,
+                    "Questionable - 0.5 Slight impairment in these activities." = 0.5,
+                    "Mild - 1 Unable to function independently at these activities, although may still be engaged in some; appears normal to casual inspection." = 1,
+                    "Moderate - 2 No pretense of independent function outside the home; appears well enough to be taken to functions outside the family home." = 2,
+                    "Severe - 3 No pretense of independent function outside the home; appears too ill to be taken to functions outside the family home." = 3),
+    homehobb = recode(homehobb,
+                      "None - 0 Life at home, hobbies, and intellectual interests well maintained." = 0,
+                      "Questionable - 0.5 Life at home, hobbies, and intellectual interests slightly impaired." = 0.5,
+                      "Mild - 1 Mild but definite impairment of function at home; more difficult chores abandoned; more complicated hobbies and interests abandoned." = 1,
+                      "Moderate - 2 Only simple chores preserved; very restricted interests, poorly maintained." = 2,
+                      "Severe - 3 No significant function in the home." = 3)
+    
+ 
+    
+    )
+
+
+   
+```
+
+    orient = ifelse(is.na(orient), 0, orient),
+    memory = ifelse(is.na(memory), 0, memory),
+    judgment = ifelse(is.na(judgment), 0, judgment),
+    commun = ifelse (is.na(commun), 0, commun),
+    
+  
+
+    
+
+
+
+
