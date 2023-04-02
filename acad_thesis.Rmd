@@ -19,7 +19,7 @@ acad_data = read_csv(file = "./data/REDCAP.csv") %>%
 
 The CSV file was downloaded from the ACAD dataset. The dataset `acad_data` has 327 observations and 660 variables. Of the 660 varaibles, 491 are character variables, 70 are logical, and 99 are numeric. The relevant variables were then selected for further cleaning.
 
-```{r}
+```{r, eval = FALSE}
 acad_clean = acad_data %>%
   select(
     "acad_id", "degree", "gender", "country_a", "generation", 
@@ -166,6 +166,80 @@ acad_clean = acad_data %>%
                      "Moderate - 2Moderate to severe impairments in either speech or comprehension; has difficulty communicating thoughts; writing may be slightly more effective." = 2,
                      "Severe - 3Severe comprehension deficits; no intelligible speech." = 3),
     #functional assessment score variables (bills:fas)
+    #bills
+    taxes = recode(taxes,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    shopping = recode(shopping,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    games = recode(games,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    stove = recode(stove,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    mealprep = recode(mealprep,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    events = recode(events,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    payattn = recode(payattn,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    remdates = recode(remdates,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    travel = recode(travel,
+                   "0 Never did, but could do now" = 8,
+                   "1 Never did and would have difficulty now" = 7,
+                   "0 Normal" = 0,
+                   "1 Has difficulty, but does by self" = 1,
+                   "2 Requires some assistance" = 2,
+                   "3 Completely dependent" = 3,
+                   "9 Unknown" = 9),
+    #fas
     #clock1 variable 
     clock2 = recode(clock2, 
                     "No" = 0,
@@ -446,11 +520,84 @@ acad_clean = acad_data %>%
 
 ```
 
+Raw CSV file used instead due to column misalignment in the first dataset.
 
-    
-
-
+```{r}
+acad_data = read_csv(file = "./data/ACAD-202301-Columbia-Wei-20230331-raw.csv") %>%
+  janitor::clean_names() 
+  skimr::skim(acad_data)
+```
  
+The CSV file was downloaded from the ACAD dataset. The dataset `acad_data` has 311 observations and 665 variables. The relevant variables were then selected for further cleaning.
+ 
+```{r}
+acad_clean = acad_data %>%
+  select(
+    "acad_id", "age","degree", "gender", "country", "generation", 
+    
+    "parta_a201", "parta_a202", "parta_a203", "parta_a204", "parta_a205", "parta_a206", "parta_a207", "parta_a208", "parta_a209", "parta_a210", "parta_a211", "parta_a212", "parta_a213", "parta_a214", "parta_a2score",
+    
+    "memory", "orient", "judgment", "commun", "homehobb", "perscare", "cdr_sum", "cdrglob", "comport", "cdrlang",
+    
+    "bills", "taxes", "shopping", "games", "stove", "mealprep", "events", "payattn", "remdates", "travel", "fas", 
+    
+    "clock1", "clock2", "clock3", "clock4", "clock5", "clock6", "clock7", "clock8", "clock9", "clock10", "clock11", "clock12", "clock13", "clock14", "clock15", "clock_t",
+    
+    "word1_t1", "word2_t1", "word3_t1", "word4_t1", "word5_t1", "word6_t1", "word7_t1", "word8_t1", "word9_t1", "word10_t1", "comt_t1","word1_t2", "word2_t2", "word3_t2", "word4_t2", "word5_t2", "word6_t2", "word7_t2", "word8_t2", "word9_t2", "word10_t2", "comt_t2", "word1_t3", "word2_t3", "word3_t3", "word4_t3", "word5_t3", "word6_t3", "word7_t3", "word8_t3", "word9_t3", "word10_t3", "comt_t3","word1_d", "word2_d", "word3_d", "word4_d", "word5_d", "word6_d", "word7_d", "word8_d", "word9_d", "word10_d", "comt_d", "item1", "item2", "item3", "item4", "item5", "item6", "item7", "item8", "item9", "item10", "word1_dr", "word2_dr", "word3_dr", "word4_dr", "word5_dr", "word6_dr", "word7_dr", "word8_dr","word9_dr", "word10_dr", "comt_dr",
+    
+    "casi2_score", "c14_overall", "c14_secg",
+    
+    "condition1", "condition2", "condition3", "condition4", "condition5", "condition6", "condition7", "condition8", "condition9", "condition10", "condition11", "condition12", "condition13", "condition14", "condition15"
+  ) %>%
+  
+  mutate(
+    degree = factor(degree, labels = c("Grade school or less", 
+                                       "Some high school", 
+                                       "High school or G.E.D.", 
+                                       "Some college or technical school",
+                                       "College graduate (Bachelor's degree)",
+                                       "Graduate degree (Master's, Doctoral, or Professional degree)"))
+
+
+,
+    gender = factor(gender, labels = c("Male",
+                                       "Female")),
+    country = as.character(country),
+    country = recode(country, 
+                       "156" = "China", 
+                       "410" = "South Korea", 
+                       "124" = "Canada", 
+                       "344" = "Hong Kong", 
+                       "158" = "Taiwan", 
+                       "360" = "Indonesia", 
+                       "458" = "Malaysia", 
+                       "888" = "Other", 
+                       "704" = "Vietnam" )
+  )
+```
+
+A second dataset was created selecting only demographic variables, score variables, and potential confounders
+
+```{r}
+acad_clean_2 = acad_clean %>%
+  select(
+  "acad_id", "age","degree", "gender", "country", "generation", 
+    
+  "parta_a2score",
+    
+  "cdr_sum", "cdrglob", "comport", "cdrlang",
+    
+  "fas", 
+    
+  "clock_t",
+    
+  "comt_t1", "comt_t2", "comt_t3","comt_d", "comt_dr",
+    
+  "casi2_score", "c14_overall", "c14_secg",
+    
+    "condition1", "condition2", "condition3", "condition4", "condition5", "condition6", "condition7", "condition8", "condition9", "condition10", "condition11", "condition12", "condition13", "condition14", "condition15"
+  )
+```
 
     
 
