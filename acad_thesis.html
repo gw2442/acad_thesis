@@ -388,8 +388,19 @@ pre code {
 ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()</code></pre>
-<div id="importing-and-cleaning-data" class="section level3">
-<h3>Importing and cleaning data</h3>
+<pre class="r"><code>library(epitab)
+library(rstatix)</code></pre>
+<pre><code>## 
+## Attaching package: &#39;rstatix&#39;
+## 
+## The following object is masked from &#39;package:stats&#39;:
+## 
+##     filter</code></pre>
+<pre class="r"><code>library(ggplot2)
+library(broom)
+library(tableone)</code></pre>
+<div id="importing-and-cleaning-data" class="section level2">
+<h2>Importing and cleaning data</h2>
 <pre class="r"><code>acad_data = read_csv(file = &quot;./data/REDCAP.csv&quot;) %&gt;%
   janitor::clean_names() </code></pre>
 <pre><code>## Rows: 330 Columns: 663
@@ -7740,6 +7751,7 @@ cleaning.</p>
                         &quot;Yes&quot; = 1,
                         &quot;Don&#39;t know (Unsure)&quot; = 55)
     )</code></pre>
+<hr />
 <p>Raw CSV file used instead due to column misalignment in the first
 dataset.</p>
 <pre class="r"><code>acad_data = read_csv(file = &quot;./data/ACAD-202301-Columbia-Wei-20230331-raw.csv&quot;) %&gt;%
@@ -16091,7 +16103,7 @@ relevant variables were then selected for further cleaning.</p>
     
     &quot;word1_t1&quot;, &quot;word2_t1&quot;, &quot;word3_t1&quot;, &quot;word4_t1&quot;, &quot;word5_t1&quot;, &quot;word6_t1&quot;, &quot;word7_t1&quot;, &quot;word8_t1&quot;, &quot;word9_t1&quot;, &quot;word10_t1&quot;, &quot;comt_t1&quot;,&quot;word1_t2&quot;, &quot;word2_t2&quot;, &quot;word3_t2&quot;, &quot;word4_t2&quot;, &quot;word5_t2&quot;, &quot;word6_t2&quot;, &quot;word7_t2&quot;, &quot;word8_t2&quot;, &quot;word9_t2&quot;, &quot;word10_t2&quot;, &quot;comt_t2&quot;, &quot;word1_t3&quot;, &quot;word2_t3&quot;, &quot;word3_t3&quot;, &quot;word4_t3&quot;, &quot;word5_t3&quot;, &quot;word6_t3&quot;, &quot;word7_t3&quot;, &quot;word8_t3&quot;, &quot;word9_t3&quot;, &quot;word10_t3&quot;, &quot;comt_t3&quot;,&quot;word1_d&quot;, &quot;word2_d&quot;, &quot;word3_d&quot;, &quot;word4_d&quot;, &quot;word5_d&quot;, &quot;word6_d&quot;, &quot;word7_d&quot;, &quot;word8_d&quot;, &quot;word9_d&quot;, &quot;word10_d&quot;, &quot;comt_d&quot;, &quot;item1&quot;, &quot;item2&quot;, &quot;item3&quot;, &quot;item4&quot;, &quot;item5&quot;, &quot;item6&quot;, &quot;item7&quot;, &quot;item8&quot;, &quot;item9&quot;, &quot;item10&quot;, &quot;word1_dr&quot;, &quot;word2_dr&quot;, &quot;word3_dr&quot;, &quot;word4_dr&quot;, &quot;word5_dr&quot;, &quot;word6_dr&quot;, &quot;word7_dr&quot;, &quot;word8_dr&quot;,&quot;word9_dr&quot;, &quot;word10_dr&quot;, &quot;comt_dr&quot;,
     
-    &quot;casi2_score&quot;, &quot;c14_overall&quot;, &quot;c14_secg&quot;,
+    &quot;casi_score&quot;, &quot;casi2_score&quot;, &quot;c14_overall&quot;, &quot;c14_secg&quot;,
     
     &quot;condition1&quot;, &quot;condition2&quot;, &quot;condition3&quot;, &quot;condition4&quot;, &quot;condition5&quot;, &quot;condition6&quot;, &quot;condition7&quot;, &quot;condition8&quot;, &quot;condition9&quot;, &quot;condition10&quot;, &quot;condition11&quot;, &quot;condition12&quot;, &quot;condition13&quot;, &quot;condition14&quot;, &quot;condition15&quot;
   ) %&gt;%
@@ -16136,10 +16148,1291 @@ score variables, and potential confounders</p>
     
   &quot;comt_t1&quot;, &quot;comt_t2&quot;, &quot;comt_t3&quot;,&quot;comt_d&quot;, &quot;comt_dr&quot;,
     
-  &quot;casi2_score&quot;, &quot;c14_overall&quot;, &quot;c14_secg&quot;,
+  &quot;casi_score&quot;, &quot;casi2_score&quot;, &quot;c14_overall&quot;, &quot;c14_secg&quot;,
     
     &quot;condition1&quot;, &quot;condition2&quot;, &quot;condition3&quot;, &quot;condition4&quot;, &quot;condition5&quot;, &quot;condition6&quot;, &quot;condition7&quot;, &quot;condition8&quot;, &quot;condition9&quot;, &quot;condition10&quot;, &quot;condition11&quot;, &quot;condition12&quot;, &quot;condition13&quot;, &quot;condition14&quot;, &quot;condition15&quot;
   )</code></pre>
+<p>Excluded 11 subjects due to no dietary information available.
+Excluded 17 subjects due to entire survey information available Excluded
+44 subjects due to no c14_overall and c14_secg information
+available.</p>
+<pre class="r"><code>acad_clean_2 = acad_clean_2 %&gt;%
+  drop_na(parta_a2score) %&gt;%
+  drop_na(gender) %&gt;%
+  drop_na(c14_overall) %&gt;%
+  drop_na(c14_secg)</code></pre>
+<p>Combining casi and casi2 scores; categorizing dietary score; renaming
+condition variables</p>
+<pre class="r"><code>acad_clean_2 = acad_clean_2 %&gt;%
+  mutate(
+  casi_score = ifelse(is.na(casi_score), 0, casi_score),
+  casi2_score = ifelse(is.na(casi2_score), 0, casi2_score),
+  casi_t_score = casi_score + casi2_score,
+  
+  medi_score = as.factor(ifelse(parta_a2score &lt; 5, &quot;low&quot;,
+                           ifelse(parta_a2score &lt; 9, &quot;middle&quot;,
+                         &quot;high&quot;))),
+
+  hypertension = condition1,
+  diabetes = condition2,
+  cholesterol = condition3,
+  myo_infarc = condition4,
+  cong_heart_f = condition5,
+  stroke = condition6, 
+  head_injury = condition7,
+  seizure = condition8,
+  hiv = condition9,
+  sleep_apnea = condition10,
+  sleep_disorder = condition11,
+  other_cog = condition12,
+  covid = condition13,
+  vac_covid = condition14,
+  kidney = condition15,
+  ) %&gt;%
+  
+  select(-condition1, -condition2, -condition3, -condition4, -condition5, -condition6, -condition7, -condition8, -condition9, -condition10, -condition11, -condition12, -condition13, -condition14, -condition15, -casi_score, -casi2_score) %&gt;%
+  
+select(
+  &quot;acad_id&quot;, &quot;age&quot;, &quot;gender&quot;, &quot;country&quot;, &quot;generation&quot;, &quot;degree&quot;, &quot;parta_a2score&quot;, &quot;medi_score&quot;, &quot;casi_t_score&quot;, everything()
+)</code></pre>
+<p>Picking comorbidities:</p>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(hypertension) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   hypertension n_obs
+##          &lt;dbl&gt; &lt;int&gt;
+## 1            0   135
+## 2            1   121
+## 3           55     1
+## 4           NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(diabetes) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   diabetes n_obs
+##      &lt;dbl&gt; &lt;int&gt;
+## 1        0   187
+## 2        1    67
+## 3       55     3
+## 4       NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(cholesterol) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   cholesterol n_obs
+##         &lt;dbl&gt; &lt;int&gt;
+## 1           0   125
+## 2           1   130
+## 3          55     2
+## 4          NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(myo_infarc) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   myo_infarc n_obs
+##        &lt;dbl&gt; &lt;int&gt;
+## 1          0   240
+## 2          1    16
+## 3         55     1
+## 4         NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(cong_heart_f) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   cong_heart_f n_obs
+##          &lt;dbl&gt; &lt;int&gt;
+## 1            0   250
+## 2            1     4
+## 3           55     3
+## 4           NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(stroke) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   stroke n_obs
+##    &lt;dbl&gt; &lt;int&gt;
+## 1      0   241
+## 2      1    14
+## 3     55     2
+## 4     NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(head_injury) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   head_injury n_obs
+##         &lt;dbl&gt; &lt;int&gt;
+## 1           0   242
+## 2           1    14
+## 3          55     1
+## 4          NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(seizure) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   seizure n_obs
+##     &lt;dbl&gt; &lt;int&gt;
+## 1       0   251
+## 2       1     5
+## 3      55     1
+## 4      NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(hiv) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 2 × 2
+##     hiv n_obs
+##   &lt;dbl&gt; &lt;int&gt;
+## 1     0   257
+## 2    NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(sleep_apnea) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   sleep_apnea n_obs
+##         &lt;dbl&gt; &lt;int&gt;
+## 1           0   228
+## 2           1    28
+## 3          55     1
+## 4          NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(sleep_disorder) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 3 × 2
+##   sleep_disorder n_obs
+##            &lt;dbl&gt; &lt;int&gt;
+## 1              0   256
+## 2              1     1
+## 3             NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(other_cog) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 4 × 2
+##   other_cog n_obs
+##       &lt;dbl&gt; &lt;int&gt;
+## 1         0   215
+## 2         1    41
+## 3        55     1
+## 4        NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(covid) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 3 × 2
+##   covid n_obs
+##   &lt;dbl&gt; &lt;int&gt;
+## 1     0   235
+## 2     1    22
+## 3    NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(vac_covid) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 3 × 2
+##   vac_covid n_obs
+##       &lt;dbl&gt; &lt;int&gt;
+## 1         0     8
+## 2         1   249
+## 3        NA     3</code></pre>
+<pre class="r"><code>acad_clean_2 %&gt;%
+  group_by(kidney) %&gt;%
+  summarise(n_obs = n())</code></pre>
+<pre><code>## # A tibble: 3 × 2
+##   kidney n_obs
+##    &lt;dbl&gt; &lt;int&gt;
+## 1      0   142
+## 2      1     1
+## 3     NA   117</code></pre>
+<p>selected the top three comorbidities (cholesterol, hypertension, and
+diabetes). Dropped all remaining comorbidities.</p>
+<pre class="r"><code>acad_clean_2 = acad_clean_2 %&gt;%
+  select(-myo_infarc, -cong_heart_f, -stroke, -head_injury, -seizure, -hiv, -sleep_apnea, -sleep_disorder, -other_cog, -covid, -vac_covid, -kidney)
+
+skimr::skim(acad_clean_2)</code></pre>
+<table>
+<caption>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td align="left">Name</td>
+<td align="left">acad_clean_2</td>
+</tr>
+<tr class="even">
+<td align="left">Number of rows</td>
+<td align="left">260</td>
+</tr>
+<tr class="odd">
+<td align="left">Number of columns</td>
+<td align="left">25</td>
+</tr>
+<tr class="even">
+<td align="left">_______________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Column type frequency:</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">character</td>
+<td align="left">2</td>
+</tr>
+<tr class="odd">
+<td align="left">factor</td>
+<td align="left">3</td>
+</tr>
+<tr class="even">
+<td align="left">numeric</td>
+<td align="left">20</td>
+</tr>
+<tr class="odd">
+<td align="left">________________________</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Group variables</td>
+<td align="left">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: character</strong></p>
+<table>
+<colgroup>
+<col width="19%" />
+<col width="13%" />
+<col width="19%" />
+<col width="5%" />
+<col width="5%" />
+<col width="8%" />
+<col width="12%" />
+<col width="15%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">min</th>
+<th align="right">max</th>
+<th align="right">empty</th>
+<th align="right">n_unique</th>
+<th align="right">whitespace</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">acad_id</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">8</td>
+<td align="right">8</td>
+<td align="right">0</td>
+<td align="right">260</td>
+<td align="right">0</td>
+</tr>
+<tr class="even">
+<td align="left">country</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">5</td>
+<td align="right">11</td>
+<td align="right">0</td>
+<td align="right">9</td>
+<td align="right">0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: factor</strong></p>
+<table>
+<colgroup>
+<col width="15%" />
+<col width="11%" />
+<col width="15%" />
+<col width="8%" />
+<col width="10%" />
+<col width="38%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="left">ordered</th>
+<th align="right">n_unique</th>
+<th align="left">top_counts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">gender</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Fem: 182, Mal: 78</td>
+</tr>
+<tr class="even">
+<td align="left">degree</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">6</td>
+<td align="left">Col: 78, Hig: 61, Som: 55, Som: 29</td>
+</tr>
+<tr class="odd">
+<td align="left">medi_score</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">3</td>
+<td align="left">mid: 184, hig: 46, low: 30</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table style="width:100%;">
+<colgroup>
+<col width="17%" />
+<col width="12%" />
+<col width="17%" />
+<col width="7%" />
+<col width="7%" />
+<col width="3%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="6%" />
+<col width="7%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">mean</th>
+<th align="right">sd</th>
+<th align="right">p0</th>
+<th align="right">p25</th>
+<th align="right">p50</th>
+<th align="right">p75</th>
+<th align="right">p100</th>
+<th align="left">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">73.76</td>
+<td align="right">7.75</td>
+<td align="right">60</td>
+<td align="right">67.0</td>
+<td align="right">73.0</td>
+<td align="right">79.0</td>
+<td align="right">101</td>
+<td align="left">▆▇▅▂▁</td>
+</tr>
+<tr class="even">
+<td align="left">generation</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">1.02</td>
+<td align="right">0.20</td>
+<td align="right">1</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="right">4</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">parta_a2score</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">6.83</td>
+<td align="right">1.95</td>
+<td align="right">2</td>
+<td align="right">5.0</td>
+<td align="right">7.0</td>
+<td align="right">8.0</td>
+<td align="right">12</td>
+<td align="left">▂▆▇▃▁</td>
+</tr>
+<tr class="even">
+<td align="left">casi_t_score</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">86.32</td>
+<td align="right">15.70</td>
+<td align="right">0</td>
+<td align="right">85.5</td>
+<td align="right">90.9</td>
+<td align="right">94.4</td>
+<td align="right">100</td>
+<td align="left">▁▁▁▁▇</td>
+</tr>
+<tr class="odd">
+<td align="left">cdr_sum</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">1.14</td>
+<td align="right">3.15</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">0.5</td>
+<td align="right">18</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">cdrglob</td>
+<td align="right">1</td>
+<td align="right">1.00</td>
+<td align="right">0.24</td>
+<td align="right">0.55</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">3</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">comport</td>
+<td align="right">2</td>
+<td align="right">0.99</td>
+<td align="right">0.09</td>
+<td align="right">0.42</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">3</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">cdrlang</td>
+<td align="right">2</td>
+<td align="right">0.99</td>
+<td align="right">0.09</td>
+<td align="right">0.37</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">3</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">fas</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">2.98</td>
+<td align="right">6.75</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">2.0</td>
+<td align="right">30</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">clock_t</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">12.13</td>
+<td align="right">3.64</td>
+<td align="right">0</td>
+<td align="right">10.0</td>
+<td align="right">14.0</td>
+<td align="right">15.0</td>
+<td align="right">15</td>
+<td align="left">▁▁▂▂▇</td>
+</tr>
+<tr class="odd">
+<td align="left">comt_t1</td>
+<td align="right">1</td>
+<td align="right">1.00</td>
+<td align="right">5.66</td>
+<td align="right">2.06</td>
+<td align="right">0</td>
+<td align="right">5.0</td>
+<td align="right">6.0</td>
+<td align="right">7.0</td>
+<td align="right">10</td>
+<td align="left">▂▃▇▆▁</td>
+</tr>
+<tr class="even">
+<td align="left">comt_t2</td>
+<td align="right">1</td>
+<td align="right">1.00</td>
+<td align="right">7.22</td>
+<td align="right">2.12</td>
+<td align="right">0</td>
+<td align="right">6.5</td>
+<td align="right">8.0</td>
+<td align="right">9.0</td>
+<td align="right">10</td>
+<td align="left">▁▁▃▇▅</td>
+</tr>
+<tr class="odd">
+<td align="left">comt_t3</td>
+<td align="right">1</td>
+<td align="right">1.00</td>
+<td align="right">7.72</td>
+<td align="right">2.24</td>
+<td align="right">0</td>
+<td align="right">7.0</td>
+<td align="right">8.0</td>
+<td align="right">9.0</td>
+<td align="right">10</td>
+<td align="left">▁▁▂▇▇</td>
+</tr>
+<tr class="even">
+<td align="left">comt_d</td>
+<td align="right">1</td>
+<td align="right">1.00</td>
+<td align="right">7.27</td>
+<td align="right">2.52</td>
+<td align="right">0</td>
+<td align="right">6.0</td>
+<td align="right">8.0</td>
+<td align="right">9.0</td>
+<td align="right">10</td>
+<td align="left">▂▁▃▇▇</td>
+</tr>
+<tr class="odd">
+<td align="left">comt_dr</td>
+<td align="right">1</td>
+<td align="right">1.00</td>
+<td align="right">19.27</td>
+<td align="right">2.65</td>
+<td align="right">0</td>
+<td align="right">20.0</td>
+<td align="right">20.0</td>
+<td align="right">20.0</td>
+<td align="right">20</td>
+<td align="left">▁▁▁▁▇</td>
+</tr>
+<tr class="even">
+<td align="left">c14_overall</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">2.79</td>
+<td align="right">2.14</td>
+<td align="right">1</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="right">5.0</td>
+<td align="right">6</td>
+<td align="left">▇▁▁▂▂</td>
+</tr>
+<tr class="odd">
+<td align="left">c14_secg</td>
+<td align="right">0</td>
+<td align="right">1.00</td>
+<td align="right">0.11</td>
+<td align="right">0.31</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">1</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">hypertension</td>
+<td align="right">3</td>
+<td align="right">0.99</td>
+<td align="right">0.68</td>
+<td align="right">3.44</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">55</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">diabetes</td>
+<td align="right">3</td>
+<td align="right">0.99</td>
+<td align="right">0.90</td>
+<td align="right">5.91</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">55</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">cholesterol</td>
+<td align="right">3</td>
+<td align="right">0.99</td>
+<td align="right">0.93</td>
+<td align="right">4.82</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="right">55</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+</tbody>
+</table>
+<p>Final cleaned data set is comprised of 260 observations and 25
+variables - 2 character, 3 factor, and 20 numeric.</p>
+</div>
+<div id="data-analysis" class="section level2">
+<h2>Data Analysis</h2>
+<p>Exposure variable:</p>
+<ul>
+<li>medi_score</li>
+</ul>
+<p>Outcome variables:</p>
+<ul>
+<li>casi_t_score</li>
+<li>c14_overall</li>
+<li>c14_secg</li>
+</ul>
+<p>Covariates:</p>
+<ul>
+<li>age</li>
+<li>gender</li>
+<li>education level</li>
+<li>cholesterol</li>
+<li>hypertension</li>
+<li>diabetes</li>
+</ul>
+<p>###Summary tables</p>
+<div id="overall-demographic-and-clinical-charactersitic-table" class="section level4">
+<h4>Overall demographic and clinical charactersitic table</h4>
+<pre class="r"><code>listVars = c(&quot;age&quot;, &quot;gender&quot;, &quot;degree&quot;, &quot;country&quot;, &quot;medi_score&quot;, &quot;casi_t_score&quot;, &quot;c14_overall&quot;, &quot;c14_secg&quot;, &quot;cholesterol&quot;, &quot;hypertension&quot;, &quot;diabetes&quot;)
+
+catVars = c(&quot;gender&quot;, &quot;degree&quot;, &quot;country&quot;, &quot;medi_score&quot;,&quot;c14_overall&quot;, &quot;c14_secg&quot;, &quot;cholesterol&quot;, &quot;hypertension&quot;, &quot;diabetes&quot;)
+
+table1 = CreateTableOne(vars = listVars, data = acad_clean_2, factorVars = catVars)
+
+table1</code></pre>
+<pre><code>##                                                                  
+##                                                                   Overall      
+##   n                                                                 260        
+##   age (mean (SD))                                                 73.76 (7.75) 
+##   gender = Female (%)                                               182 (70.0) 
+##   degree (%)                                                                   
+##      Grade school or less                                            26 (10.0) 
+##      Some high school                                                29 (11.2) 
+##      High school or G.E.D.                                           61 (23.5) 
+##      Some college or technical school                                55 (21.2) 
+##      College graduate (Bachelor&#39;s degree)                            78 (30.0) 
+##      Graduate degree (Master&#39;s, Doctoral, or Professional degree)    11 ( 4.2) 
+##   country (%)                                                                  
+##      Canada                                                           1 ( 0.4) 
+##      China                                                          227 (87.3) 
+##      Hong Kong                                                       16 ( 6.2) 
+##      Indonesia                                                        1 ( 0.4) 
+##      Malaysia                                                         3 ( 1.2) 
+##      Other                                                            1 ( 0.4) 
+##      South Korea                                                      1 ( 0.4) 
+##      Taiwan                                                           5 ( 1.9) 
+##      Vietnam                                                          5 ( 1.9) 
+##   medi_score (%)                                                               
+##      high                                                            46 (17.7) 
+##      low                                                             30 (11.5) 
+##      middle                                                         184 (70.8) 
+##   casi_t_score (mean (SD))                                        86.32 (15.70)
+##   c14_overall (%)                                                              
+##      1                                                              147 (56.5) 
+##      2                                                                2 ( 0.8) 
+##      3                                                                2 ( 0.8) 
+##      4                                                               24 ( 9.2) 
+##      5                                                               37 (14.2) 
+##      6                                                               48 (18.5) 
+##   c14_secg = 1 (%)                                                   28 (10.8) 
+##   cholesterol (%)                                                              
+##      0                                                              125 (48.6) 
+##      1                                                              130 (50.6) 
+##      55                                                               2 ( 0.8) 
+##   hypertension (%)                                                             
+##      0                                                              135 (52.5) 
+##      1                                                              121 (47.1) 
+##      55                                                               1 ( 0.4) 
+##   diabetes (%)                                                                 
+##      0                                                              187 (72.8) 
+##      1                                                               67 (26.1) 
+##      55                                                               3 ( 1.2)</code></pre>
+</div>
+<div id="demographic-and-clinical-characteristics-by-mediterranean-diet-score-tertiles" class="section level4">
+<h4>Demographic and clinical characteristics by Mediterranean diet score
+tertiles</h4>
+<pre class="r"><code>listVars_1 = c(&quot;age&quot;, &quot;gender&quot;, &quot;degree&quot;, &quot;country&quot;, &quot;casi_t_score&quot;, &quot;c14_overall&quot;, &quot;c14_secg&quot;, &quot;cholesterol&quot;, &quot;hypertension&quot;, &quot;diabetes&quot;)
+
+table2 = CreateTableOne(listVars_1, data = acad_clean_2, factorVars = catVars, strata = c(&quot;medi_score&quot;))
+
+table2 </code></pre>
+<pre><code>##                                                                  Stratified by medi_score
+##                                                                   high         
+##   n                                                                  46        
+##   age (mean (SD))                                                 72.02 (5.43) 
+##   gender = Female (%)                                                33 (71.7) 
+##   degree (%)                                                                   
+##      Grade school or less                                             3 ( 6.5) 
+##      Some high school                                                 4 ( 8.7) 
+##      High school or G.E.D.                                           13 (28.3) 
+##      Some college or technical school                                11 (23.9) 
+##      College graduate (Bachelor&#39;s degree)                            13 (28.3) 
+##      Graduate degree (Master&#39;s, Doctoral, or Professional degree)     2 ( 4.3) 
+##   country (%)                                                                  
+##      Canada                                                           1 ( 2.2) 
+##      China                                                           41 (89.1) 
+##      Hong Kong                                                        4 ( 8.7) 
+##      Indonesia                                                        0 ( 0.0) 
+##      Malaysia                                                         0 ( 0.0) 
+##      Other                                                            0 ( 0.0) 
+##      South Korea                                                      0 ( 0.0) 
+##      Taiwan                                                           0 ( 0.0) 
+##      Vietnam                                                          0 ( 0.0) 
+##   casi_t_score (mean (SD))                                        88.57 (10.27)
+##   c14_overall (%)                                                              
+##      1                                                               25 (54.3) 
+##      2                                                                1 ( 2.2) 
+##      3                                                                0 ( 0.0) 
+##      4                                                                2 ( 4.3) 
+##      5                                                               10 (21.7) 
+##      6                                                                8 (17.4) 
+##   c14_secg = 1 (%)                                                    3 ( 6.5) 
+##   cholesterol (%)                                                              
+##      0                                                               20 (44.4) 
+##      1                                                               25 (55.6) 
+##      55                                                               0 ( 0.0) 
+##   hypertension (%)                                                             
+##      0                                                               24 (53.3) 
+##      1                                                               21 (46.7) 
+##      55                                                               0 ( 0.0) 
+##   diabetes (%)                                                                 
+##      0                                                               31 (68.9) 
+##      1                                                               13 (28.9) 
+##      55                                                               1 ( 2.2) 
+##                                                                  Stratified by medi_score
+##                                                                   low          
+##   n                                                                  30        
+##   age (mean (SD))                                                 73.23 (9.03) 
+##   gender = Female (%)                                                22 (73.3) 
+##   degree (%)                                                                   
+##      Grade school or less                                             3 (10.0) 
+##      Some high school                                                 4 (13.3) 
+##      High school or G.E.D.                                            7 (23.3) 
+##      Some college or technical school                                 7 (23.3) 
+##      College graduate (Bachelor&#39;s degree)                             8 (26.7) 
+##      Graduate degree (Master&#39;s, Doctoral, or Professional degree)     1 ( 3.3) 
+##   country (%)                                                                  
+##      Canada                                                           0 ( 0.0) 
+##      China                                                           26 (86.7) 
+##      Hong Kong                                                        3 (10.0) 
+##      Indonesia                                                        0 ( 0.0) 
+##      Malaysia                                                         0 ( 0.0) 
+##      Other                                                            0 ( 0.0) 
+##      South Korea                                                      0 ( 0.0) 
+##      Taiwan                                                           0 ( 0.0) 
+##      Vietnam                                                          1 ( 3.3) 
+##   casi_t_score (mean (SD))                                        83.52 (17.31)
+##   c14_overall (%)                                                              
+##      1                                                               19 (63.3) 
+##      2                                                                0 ( 0.0) 
+##      3                                                                0 ( 0.0) 
+##      4                                                                5 (16.7) 
+##      5                                                                3 (10.0) 
+##      6                                                                3 (10.0) 
+##   c14_secg = 1 (%)                                                    6 (20.0) 
+##   cholesterol (%)                                                              
+##      0                                                               11 (36.7) 
+##      1                                                               18 (60.0) 
+##      55                                                               1 ( 3.3) 
+##   hypertension (%)                                                             
+##      0                                                               12 (40.0) 
+##      1                                                               17 (56.7) 
+##      55                                                               1 ( 3.3) 
+##   diabetes (%)                                                                 
+##      0                                                               18 (60.0) 
+##      1                                                               11 (36.7) 
+##      55                                                               1 ( 3.3) 
+##                                                                  Stratified by medi_score
+##                                                                   middle       
+##   n                                                                 184        
+##   age (mean (SD))                                                 74.28 (7.99) 
+##   gender = Female (%)                                               127 (69.0) 
+##   degree (%)                                                                   
+##      Grade school or less                                            20 (10.9) 
+##      Some high school                                                21 (11.4) 
+##      High school or G.E.D.                                           41 (22.3) 
+##      Some college or technical school                                37 (20.1) 
+##      College graduate (Bachelor&#39;s degree)                            57 (31.0) 
+##      Graduate degree (Master&#39;s, Doctoral, or Professional degree)     8 ( 4.3) 
+##   country (%)                                                                  
+##      Canada                                                           0 ( 0.0) 
+##      China                                                          160 (87.0) 
+##      Hong Kong                                                        9 ( 4.9) 
+##      Indonesia                                                        1 ( 0.5) 
+##      Malaysia                                                         3 ( 1.6) 
+##      Other                                                            1 ( 0.5) 
+##      South Korea                                                      1 ( 0.5) 
+##      Taiwan                                                           5 ( 2.7) 
+##      Vietnam                                                          4 ( 2.2) 
+##   casi_t_score (mean (SD))                                        86.21 (16.52)
+##   c14_overall (%)                                                              
+##      1                                                              103 (56.0) 
+##      2                                                                1 ( 0.5) 
+##      3                                                                2 ( 1.1) 
+##      4                                                               17 ( 9.2) 
+##      5                                                               24 (13.0) 
+##      6                                                               37 (20.1) 
+##   c14_secg = 1 (%)                                                   19 (10.3) 
+##   cholesterol (%)                                                              
+##      0                                                               94 (51.6) 
+##      1                                                               87 (47.8) 
+##      55                                                               1 ( 0.5) 
+##   hypertension (%)                                                             
+##      0                                                               99 (54.4) 
+##      1                                                               83 (45.6) 
+##      55                                                               0 ( 0.0) 
+##   diabetes (%)                                                                 
+##      0                                                              138 (75.8) 
+##      1                                                               43 (23.6) 
+##      55                                                               1 ( 0.5) 
+##                                                                  Stratified by medi_score
+##                                                                   p      test
+##   n                                                                          
+##   age (mean (SD))                                                  0.195     
+##   gender = Female (%)                                              0.857     
+##   degree (%)                                                       0.994     
+##      Grade school or less                                                    
+##      Some high school                                                        
+##      High school or G.E.D.                                                   
+##      Some college or technical school                                        
+##      College graduate (Bachelor&#39;s degree)                                    
+##      Graduate degree (Master&#39;s, Doctoral, or Professional degree)            
+##   country (%)                                                      0.733     
+##      Canada                                                                  
+##      China                                                                   
+##      Hong Kong                                                               
+##      Indonesia                                                               
+##      Malaysia                                                                
+##      Other                                                                   
+##      South Korea                                                             
+##      Taiwan                                                                  
+##      Vietnam                                                                 
+##   casi_t_score (mean (SD))                                         0.386     
+##   c14_overall (%)                                                  0.487     
+##      1                                                                       
+##      2                                                                       
+##      3                                                                       
+##      4                                                                       
+##      5                                                                       
+##      6                                                                       
+##   c14_secg = 1 (%)                                                 0.169     
+##   cholesterol (%)                                                  0.249     
+##      0                                                                       
+##      1                                                                       
+##      55                                                                      
+##   hypertension (%)                                                 0.055     
+##      0                                                                       
+##      1                                                                       
+##      55                                                                      
+##   diabetes (%)                                                     0.280     
+##      0                                                                       
+##      1                                                                       
+##      55</code></pre>
+</div>
+<div id="demographic-clinical-and-dietary-characteristics-for-subjects-by-c14_overall-or-c14_secg" class="section level4">
+<h4>Demographic, clinical, and dietary characteristics for subjects by
+c14_overall (or c14_secg?)</h4>
+<pre class="r"><code>listVars_2 = c(&quot;age&quot;, &quot;gender&quot;, &quot;degree&quot;, &quot;country&quot;, &quot;casi_t_score&quot;, &quot;c14_overall&quot;, &quot;cholesterol&quot;, &quot;hypertension&quot;, &quot;diabetes&quot;)
+
+table3 = CreateTableOne(listVars_2, data = acad_clean_2, factorVars = catVars, strata = c(&quot;c14_secg&quot;))
+
+table3</code></pre>
+<pre><code>##                                                                  Stratified by c14_secg
+##                                                                   0            
+##   n                                                                 232        
+##   age (mean (SD))                                                 72.48 (6.82) 
+##   gender = Female (%)                                               165 (71.1) 
+##   degree (%)                                                                   
+##      Grade school or less                                            21 ( 9.1) 
+##      Some high school                                                24 (10.3) 
+##      High school or G.E.D.                                           58 (25.0) 
+##      Some college or technical school                                47 (20.3) 
+##      College graduate (Bachelor&#39;s degree)                            71 (30.6) 
+##      Graduate degree (Master&#39;s, Doctoral, or Professional degree)    11 ( 4.7) 
+##   country (%)                                                                  
+##      Canada                                                           1 ( 0.4) 
+##      China                                                          206 (88.8) 
+##      Hong Kong                                                       11 ( 4.7) 
+##      Indonesia                                                        1 ( 0.4) 
+##      Malaysia                                                         3 ( 1.3) 
+##      Other                                                            1 ( 0.4) 
+##      South Korea                                                      1 ( 0.4) 
+##      Taiwan                                                           4 ( 1.7) 
+##      Vietnam                                                          4 ( 1.7) 
+##   casi_t_score (mean (SD))                                        90.43 (6.28) 
+##   c14_overall (%)                                                              
+##      1                                                              147 (63.4) 
+##      2                                                                2 ( 0.9) 
+##      3                                                                0 ( 0.0) 
+##      4                                                                0 ( 0.0) 
+##      5                                                               37 (15.9) 
+##      6                                                               46 (19.8) 
+##   cholesterol (%)                                                              
+##      0                                                              116 (50.7) 
+##      1                                                              112 (48.9) 
+##      55                                                               1 ( 0.4) 
+##   hypertension (%)                                                             
+##      0                                                              128 (55.9) 
+##      1                                                              101 (44.1) 
+##      55                                                               0 ( 0.0) 
+##   diabetes (%)                                                                 
+##      0                                                              170 (74.2) 
+##      1                                                               57 (24.9) 
+##      55                                                               2 ( 0.9) 
+##                                                                  Stratified by c14_secg
+##                                                                   1            
+##   n                                                                  28        
+##   age (mean (SD))                                                 84.32 (7.01) 
+##   gender = Female (%)                                                17 (60.7) 
+##   degree (%)                                                                   
+##      Grade school or less                                             5 (17.9) 
+##      Some high school                                                 5 (17.9) 
+##      High school or G.E.D.                                            3 (10.7) 
+##      Some college or technical school                                 8 (28.6) 
+##      College graduate (Bachelor&#39;s degree)                             7 (25.0) 
+##      Graduate degree (Master&#39;s, Doctoral, or Professional degree)     0 ( 0.0) 
+##   country (%)                                                                  
+##      Canada                                                           0 ( 0.0) 
+##      China                                                           21 (75.0) 
+##      Hong Kong                                                        5 (17.9) 
+##      Indonesia                                                        0 ( 0.0) 
+##      Malaysia                                                         0 ( 0.0) 
+##      Other                                                            0 ( 0.0) 
+##      South Korea                                                      0 ( 0.0) 
+##      Taiwan                                                           1 ( 3.6) 
+##      Vietnam                                                          1 ( 3.6) 
+##   casi_t_score (mean (SD))                                        52.24 (26.02)
+##   c14_overall (%)                                                              
+##      1                                                                0 ( 0.0) 
+##      2                                                                0 ( 0.0) 
+##      3                                                                2 ( 7.1) 
+##      4                                                               24 (85.7) 
+##      5                                                                0 ( 0.0) 
+##      6                                                                2 ( 7.1) 
+##   cholesterol (%)                                                              
+##      0                                                                9 (32.1) 
+##      1                                                               18 (64.3) 
+##      55                                                               1 ( 3.6) 
+##   hypertension (%)                                                             
+##      0                                                                7 (25.0) 
+##      1                                                               20 (71.4) 
+##      55                                                               1 ( 3.6) 
+##   diabetes (%)                                                                 
+##      0                                                               17 (60.7) 
+##      1                                                               10 (35.7) 
+##      55                                                               1 ( 3.6) 
+##                                                                  Stratified by c14_secg
+##                                                                   p      test
+##   n                                                                          
+##   age (mean (SD))                                                 &lt;0.001     
+##   gender = Female (%)                                              0.359     
+##   degree (%)                                                       0.169     
+##      Grade school or less                                                    
+##      Some high school                                                        
+##      High school or G.E.D.                                                   
+##      Some college or technical school                                        
+##      College graduate (Bachelor&#39;s degree)                                    
+##      Graduate degree (Master&#39;s, Doctoral, or Professional degree)            
+##   country (%)                                                      0.321     
+##      Canada                                                                  
+##      China                                                                   
+##      Hong Kong                                                               
+##      Indonesia                                                               
+##      Malaysia                                                                
+##      Other                                                                   
+##      South Korea                                                             
+##      Taiwan                                                                  
+##      Vietnam                                                                 
+##   casi_t_score (mean (SD))                                        &lt;0.001     
+##   c14_overall (%)                                                 &lt;0.001     
+##      1                                                                       
+##      2                                                                       
+##      3                                                                       
+##      4                                                                       
+##      5                                                                       
+##      6                                                                       
+##   cholesterol (%)                                                  0.048     
+##      0                                                                       
+##      1                                                                       
+##      55                                                                      
+##   hypertension (%)                                                &lt;0.001     
+##      0                                                                       
+##      1                                                                       
+##      55                                                                      
+##   diabetes (%)                                                     0.192     
+##      0                                                                       
+##      1                                                                       
+##      55</code></pre>
+</div>
+<div id="chi-square-test-for-association-between-exposure-medi_score-and-outcome-c14_secg-c14_overall" class="section level4">
+<h4>Chi-square test for association between exposure (medi_score) and
+outcome (c14_secg, c14_overall)</h4>
+<pre class="r"><code>acad_clean_2$medi_score = factor(acad_clean_2$medi_score, levels = c(&quot;low&quot;, &quot;middle&quot;, &quot;high&quot;))
+
+table(acad_clean_2$medi_score, acad_clean_2$c14_secg)</code></pre>
+<pre><code>##         
+##            0   1
+##   low     24   6
+##   middle 165  19
+##   high    43   3</code></pre>
+<pre class="r"><code>chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_secg)</code></pre>
+<pre><code>## Warning in chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_secg):
+## Chi-squared approximation may be incorrect</code></pre>
+<pre><code>## 
+##  Pearson&#39;s Chi-squared test
+## 
+## data:  acad_clean_2$medi_score and acad_clean_2$c14_secg
+## X-squared = 3.5613, df = 2, p-value = 0.1685</code></pre>
+<pre class="r"><code>table(acad_clean_2$medi_score, acad_clean_2$c14_overall)</code></pre>
+<pre><code>##         
+##            1   2   3   4   5   6
+##   low     19   0   0   5   3   3
+##   middle 103   1   2  17  24  37
+##   high    25   1   0   2  10   8</code></pre>
+<pre class="r"><code>chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_overall)</code></pre>
+<pre><code>## Warning in chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_overall):
+## Chi-squared approximation may be incorrect</code></pre>
+<pre><code>## 
+##  Pearson&#39;s Chi-squared test
+## 
+## data:  acad_clean_2$medi_score and acad_clean_2$c14_overall
+## X-squared = 9.4825, df = 10, p-value = 0.487</code></pre>
+</div>
+<div id="logsitic-regression-for-medi_score-and-outcome-c14_secg" class="section level4">
+<h4>Logsitic regression for medi_score and outcome (c14_secg)</h4>
+<pre class="r"><code>logit_1 = glm(c14_secg ~ medi_score, data = acad_clean_2, family = &quot;binomial&quot;)
+summary(logit_1)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = c14_secg ~ medi_score, family = &quot;binomial&quot;, data = acad_clean_2)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -0.6681  -0.4669  -0.4669  -0.3673   2.3367  
+## 
+## Coefficients:
+##                  Estimate Std. Error z value Pr(&gt;|z|)   
+## (Intercept)       -1.3863     0.4564  -3.037  0.00239 **
+## medi_scoremiddle  -0.7752     0.5167  -1.500  0.13357   
+## medi_scorehigh    -1.2763     0.7516  -1.698  0.08949 . 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 177.66  on 259  degrees of freedom
+## Residual deviance: 174.45  on 257  degrees of freedom
+## AIC: 180.45
+## 
+## Number of Fisher Scoring iterations: 5</code></pre>
+<ul>
+<li>Also controlling for age, gender, education, condition(?)</li>
+</ul>
+<pre class="r"><code>logit_2 = glm(c14_secg ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = &quot;binomial&quot;)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>summary(logit_2)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = c14_secg ~ medi_score + age + gender + degree + 
+##     cholesterol + diabetes + hypertension, family = &quot;binomial&quot;, 
+##     data = acad_clean_2)
+## 
+## Deviance Residuals: 
+##      Min        1Q    Median        3Q       Max  
+## -1.58397  -0.33796  -0.17505  -0.07673   2.89348  
+## 
+## Coefficients:
+##                                                                      Estimate
+## (Intercept)                                                         -19.68352
+## medi_scoremiddle                                                     -0.37132
+## medi_scorehigh                                                       -0.01056
+## age                                                                   0.22373
+## genderFemale                                                          0.01826
+## degreeSome high school                                               -0.27310
+## degreeHigh school or G.E.D.                                          -0.91394
+## degreeSome college or technical school                                0.39123
+## degreeCollege graduate (Bachelor&#39;s degree)                           -0.70377
+## degreeGraduate degree (Master&#39;s, Doctoral, or Professional degree)  -15.49523
+## cholesterol                                                           0.03234
+## diabetes                                                              0.04291
+## hypertension                                                          0.81201
+##                                                                    Std. Error
+## (Intercept)                                                           3.83191
+## medi_scoremiddle                                                      0.82917
+## medi_scorehigh                                                        1.06368
+## age                                                                   0.04276
+## genderFemale                                                          0.57499
+## degreeSome high school                                                1.01820
+## degreeHigh school or G.E.D.                                           0.97195
+## degreeSome college or technical school                                0.89157
+## degreeCollege graduate (Bachelor&#39;s degree)                            0.86510
+## degreeGraduate degree (Master&#39;s, Doctoral, or Professional degree) 1811.96317
+## cholesterol                                                           0.03230
+## diabetes                                                              0.03480
+## hypertension                                                          0.58768
+##                                                                    z value
+## (Intercept)                                                         -5.137
+## medi_scoremiddle                                                    -0.448
+## medi_scorehigh                                                      -0.010
+## age                                                                  5.232
+## genderFemale                                                         0.032
+## degreeSome high school                                              -0.268
+## degreeHigh school or G.E.D.                                         -0.940
+## degreeSome college or technical school                               0.439
+## degreeCollege graduate (Bachelor&#39;s degree)                          -0.814
+## degreeGraduate degree (Master&#39;s, Doctoral, or Professional degree)  -0.009
+## cholesterol                                                          1.001
+## diabetes                                                             1.233
+## hypertension                                                         1.382
+##                                                                    Pr(&gt;|z|)    
+## (Intercept)                                                        2.80e-07 ***
+## medi_scoremiddle                                                      0.654    
+## medi_scorehigh                                                        0.992    
+## age                                                                1.68e-07 ***
+## genderFemale                                                          0.975    
+## degreeSome high school                                                0.789    
+## degreeHigh school or G.E.D.                                           0.347    
+## degreeSome college or technical school                                0.661    
+## degreeCollege graduate (Bachelor&#39;s degree)                            0.416    
+## degreeGraduate degree (Master&#39;s, Doctoral, or Professional degree)    0.993    
+## cholesterol                                                           0.317    
+## diabetes                                                              0.218    
+## hypertension                                                          0.167    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 176.98  on 256  degrees of freedom
+## Residual deviance: 103.36  on 244  degrees of freedom
+##   (3 observations deleted due to missingness)
+## AIC: 129.36
+## 
+## Number of Fisher Scoring iterations: 17</code></pre>
+</div>
+<div id="anova-test-for-association-between-exposure-medi_score-and-outcome-casi_t_score" class="section level4">
+<h4>ANOVA test for association between exposure (medi_score) and outcome
+(casi_t_score)</h4>
+<pre class="r"><code>one.way = aov(casi_t_score ~ medi_score, data = acad_clean_2)
+summary(one.way)</code></pre>
+<pre><code>##              Df Sum Sq Mean Sq F value Pr(&gt;F)
+## medi_score    2    470   235.2   0.954  0.386
+## Residuals   257  63361   246.5</code></pre>
+</div>
+<div id="linear-regression-for-medi_score-and-outcome-casi_t_score" class="section level4">
+<h4>Linear regression for medi_score and outcome (casi_t_score)</h4>
+<pre class="r"><code>linear_1 = lm(casi_t_score ~ medi_score, data = acad_clean_2)
+summary(linear_1)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = casi_t_score ~ medi_score, data = acad_clean_2)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -86.215  -1.090   4.357   8.353  13.785 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)        83.520      2.867  29.134   &lt;2e-16 ***
+## medi_scoremiddle    2.695      3.092   0.872    0.384    
+## medi_scorehigh      5.052      3.685   1.371    0.172    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 15.7 on 257 degrees of freedom
+## Multiple R-squared:  0.007371,   Adjusted R-squared:  -0.0003541 
+## F-statistic: 0.9542 on 2 and 257 DF,  p-value: 0.3865</code></pre>
+<ul>
+<li>Also controlling for age, gender, education, condition(?)</li>
+</ul>
+<pre class="r"><code>linear_2 = lm(casi_t_score ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2)
+summary(linear_2)</code></pre>
+<pre><code>## 
+## Call:
+## lm(formula = casi_t_score ~ medi_score + age + gender + degree + 
+##     cholesterol + diabetes + hypertension, data = acad_clean_2)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -88.706  -3.582   2.158   7.223  22.543 
+## 
+## Coefficients:
+##                                                                     Estimate
+## (Intercept)                                                        134.11762
+## medi_scoremiddle                                                     3.37285
+## medi_scorehigh                                                       3.11933
+## age                                                                 -0.85015
+## genderFemale                                                         1.41369
+## degreeSome high school                                               5.48356
+## degreeHigh school or G.E.D.                                         11.89001
+## degreeSome college or technical school                              11.54958
+## degreeCollege graduate (Bachelor&#39;s degree)                          14.95035
+## degreeGraduate degree (Master&#39;s, Doctoral, or Professional degree)  15.54770
+## cholesterol                                                          0.06029
+## diabetes                                                            -0.06641
+## hypertension                                                        -0.03363
+##                                                                    Std. Error
+## (Intercept)                                                           9.32028
+## medi_scoremiddle                                                      2.77393
+## medi_scorehigh                                                        3.28138
+## age                                                                   0.11276
+## genderFemale                                                          1.90999
+## degreeSome high school                                                3.69066
+## degreeHigh school or G.E.D.                                           3.22992
+## degreeSome college or technical school                                3.29768
+## degreeCollege graduate (Bachelor&#39;s degree)                            3.12146
+## degreeGraduate degree (Master&#39;s, Doctoral, or Professional degree)    4.94296
+## cholesterol                                                           0.17996
+## diabetes                                                              0.14615
+## hypertension                                                          0.25444
+##                                                                    t value
+## (Intercept)                                                         14.390
+## medi_scoremiddle                                                     1.216
+## medi_scorehigh                                                       0.951
+## age                                                                 -7.539
+## genderFemale                                                         0.740
+## degreeSome high school                                               1.486
+## degreeHigh school or G.E.D.                                          3.681
+## degreeSome college or technical school                               3.502
+## degreeCollege graduate (Bachelor&#39;s degree)                           4.790
+## degreeGraduate degree (Master&#39;s, Doctoral, or Professional degree)   3.145
+## cholesterol                                                          0.335
+## diabetes                                                            -0.454
+## hypertension                                                        -0.132
+##                                                                    Pr(&gt;|t|)    
+## (Intercept)                                                         &lt; 2e-16 ***
+## medi_scoremiddle                                                   0.225194    
+## medi_scorehigh                                                     0.342741    
+## age                                                                9.26e-13 ***
+## genderFemale                                                       0.459919    
+## degreeSome high school                                             0.138624    
+## degreeHigh school or G.E.D.                                        0.000286 ***
+## degreeSome college or technical school                             0.000548 ***
+## degreeCollege graduate (Bachelor&#39;s degree)                         2.90e-06 ***
+## degreeGraduate degree (Master&#39;s, Doctoral, or Professional degree) 0.001864 ** 
+## cholesterol                                                        0.737920    
+## diabetes                                                           0.649936    
+## hypertension                                                       0.894955    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## Residual standard error: 13.65 on 244 degrees of freedom
+##   (3 observations deleted due to missingness)
+## Multiple R-squared:  0.2861, Adjusted R-squared:  0.2509 
+## F-statistic: 8.147 on 12 and 244 DF,  p-value: 7.584e-13</code></pre>
+</div>
 </div>
 
 

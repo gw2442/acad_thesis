@@ -7,9 +7,14 @@ date: "2023-03-28"
 ```{r}
 library(dplyr)
 library(tidyverse)
+library(epitab)
+library(rstatix)
+library(ggplot2)
+library(broom)
+library(tableone)
 ```
 
-### Importing and cleaning data
+## Importing and cleaning data
 
 ```{r}
 acad_data = read_csv(file = "./data/REDCAP.csv") %>%
@@ -520,6 +525,8 @@ acad_clean = acad_data %>%
 
 ```
 
+----
+
 Raw CSV file used instead due to column misalignment in the first dataset.
 
 ```{r}
@@ -545,7 +552,7 @@ acad_clean = acad_data %>%
     
     "word1_t1", "word2_t1", "word3_t1", "word4_t1", "word5_t1", "word6_t1", "word7_t1", "word8_t1", "word9_t1", "word10_t1", "comt_t1","word1_t2", "word2_t2", "word3_t2", "word4_t2", "word5_t2", "word6_t2", "word7_t2", "word8_t2", "word9_t2", "word10_t2", "comt_t2", "word1_t3", "word2_t3", "word3_t3", "word4_t3", "word5_t3", "word6_t3", "word7_t3", "word8_t3", "word9_t3", "word10_t3", "comt_t3","word1_d", "word2_d", "word3_d", "word4_d", "word5_d", "word6_d", "word7_d", "word8_d", "word9_d", "word10_d", "comt_d", "item1", "item2", "item3", "item4", "item5", "item6", "item7", "item8", "item9", "item10", "word1_dr", "word2_dr", "word3_dr", "word4_dr", "word5_dr", "word6_dr", "word7_dr", "word8_dr","word9_dr", "word10_dr", "comt_dr",
     
-    "casi2_score", "c14_overall", "c14_secg",
+    "casi_score", "casi2_score", "c14_overall", "c14_secg",
     
     "condition1", "condition2", "condition3", "condition4", "condition5", "condition6", "condition7", "condition8", "condition9", "condition10", "condition11", "condition12", "condition13", "condition14", "condition15"
   ) %>%
@@ -593,13 +600,241 @@ acad_clean_2 = acad_clean %>%
     
   "comt_t1", "comt_t2", "comt_t3","comt_d", "comt_dr",
     
-  "casi2_score", "c14_overall", "c14_secg",
+  "casi_score", "casi2_score", "c14_overall", "c14_secg",
     
     "condition1", "condition2", "condition3", "condition4", "condition5", "condition6", "condition7", "condition8", "condition9", "condition10", "condition11", "condition12", "condition13", "condition14", "condition15"
   )
 ```
 
-    
+Excluded 11 subjects due to no dietary information available.
+Excluded 17 subjects due to entire survey information available
+Excluded 44 subjects due to no c14_overall and c14_secg information available.
+
+```{r}
+acad_clean_2 = acad_clean_2 %>%
+  drop_na(parta_a2score) %>%
+  drop_na(gender) %>%
+  drop_na(c14_overall) %>%
+  drop_na(c14_secg)
+```
+
+Combining casi and casi2 scores; categorizing dietary score; renaming condition variables 
+
+```{r}
+acad_clean_2 = acad_clean_2 %>%
+  mutate(
+  casi_score = ifelse(is.na(casi_score), 0, casi_score),
+  casi2_score = ifelse(is.na(casi2_score), 0, casi2_score),
+  casi_t_score = casi_score + casi2_score,
+  
+  medi_score = as.factor(ifelse(parta_a2score < 5, "low",
+                           ifelse(parta_a2score < 9, "middle",
+                         "high"))),
+
+  hypertension = condition1,
+  diabetes = condition2,
+  cholesterol = condition3,
+  myo_infarc = condition4,
+  cong_heart_f = condition5,
+  stroke = condition6, 
+  head_injury = condition7,
+  seizure = condition8,
+  hiv = condition9,
+  sleep_apnea = condition10,
+  sleep_disorder = condition11,
+  other_cog = condition12,
+  covid = condition13,
+  vac_covid = condition14,
+  kidney = condition15,
+  ) %>%
+  
+  select(-condition1, -condition2, -condition3, -condition4, -condition5, -condition6, -condition7, -condition8, -condition9, -condition10, -condition11, -condition12, -condition13, -condition14, -condition15, -casi_score, -casi2_score) %>%
+  
+select(
+  "acad_id", "age", "gender", "country", "generation", "degree", "parta_a2score", "medi_score", "casi_t_score", everything()
+)
+```
+
+Picking comorbidities:
+
+```{r}
+acad_clean_2 %>%
+  group_by(hypertension) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(diabetes) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(cholesterol) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(myo_infarc) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(cong_heart_f) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(stroke) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(head_injury) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(seizure) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(hiv) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(sleep_apnea) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(sleep_disorder) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(other_cog) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(covid) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(vac_covid) %>%
+  summarise(n_obs = n())
+
+acad_clean_2 %>%
+  group_by(kidney) %>%
+  summarise(n_obs = n())
+```
+
+selected the top three comorbidities (cholesterol, hypertension, and diabetes). Dropped all remaining comorbidities. 
+
+```{r}
+acad_clean_2 = acad_clean_2 %>%
+  select(-myo_infarc, -cong_heart_f, -stroke, -head_injury, -seizure, -hiv, -sleep_apnea, -sleep_disorder, -other_cog, -covid, -vac_covid, -kidney)
+
+skimr::skim(acad_clean_2)
+```
+
+Final cleaned data set is comprised of 260 observations and 25 variables - 2 character, 3 factor, and 20 numeric.
+
+## Data Analysis
+
+Exposure variable: 
+
+* medi_score
+
+Outcome variables: 
+
+* casi_t_score
+* c14_overall
+* c14_secg
+
+Covariates: 
+
+* age
+* gender
+* education level 
+* cholesterol
+* hypertension
+* diabetes
+
+###Summary tables
+
+#### Overall demographic and clinical charactersitic table
+
+```{r}
+listVars = c("age", "gender", "degree", "country", "medi_score", "casi_t_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+
+catVars = c("gender", "degree", "country", "medi_score","c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+
+table1 = CreateTableOne(vars = listVars, data = acad_clean_2, factorVars = catVars)
+
+table1
+
+```
+
+#### Demographic and clinical characteristics by Mediterranean diet score tertiles 
+
+```{r}
+listVars_1 = c("age", "gender", "degree", "country", "casi_t_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+
+table2 = CreateTableOne(listVars_1, data = acad_clean_2, factorVars = catVars, strata = c("medi_score"))
+
+table2 
+```
+
+
+#### Demographic, clinical, and dietary characteristics for subjects by c14_overall (or c14_secg?)
+
+```{r}
+listVars_2 = c("age", "gender", "degree", "country", "casi_t_score", "c14_overall", "cholesterol", "hypertension", "diabetes")
+
+table3 = CreateTableOne(listVars_2, data = acad_clean_2, factorVars = catVars, strata = c("c14_secg"))
+
+table3
+```
+
+
+#### Chi-square test for association between exposure (medi_score) and outcome (c14_secg, c14_overall)
+
+```{r}
+acad_clean_2$medi_score = factor(acad_clean_2$medi_score, levels = c("low", "middle", "high"))
+
+table(acad_clean_2$medi_score, acad_clean_2$c14_secg)
+chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_secg)
+
+table(acad_clean_2$medi_score, acad_clean_2$c14_overall)
+chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_overall)
+```
+
+#### Logsitic regression for medi_score and outcome (c14_secg)
+
+```{r}
+logit_1 = glm(c14_secg ~ medi_score, data = acad_clean_2, family = "binomial")
+summary(logit_1)
+```
+
+* Also controlling for age, gender, education, condition(?)
+
+```{r}
+logit_2 = glm(c14_secg ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
+summary(logit_2)
+```
+
+
+#### ANOVA test for association between exposure (medi_score) and outcome (casi_t_score)
+
+```{r}
+one.way = aov(casi_t_score ~ medi_score, data = acad_clean_2)
+summary(one.way)
+```
+
+#### Linear regression for medi_score and outcome (casi_t_score)
+
+```{r}
+linear_1 = lm(casi_t_score ~ medi_score, data = acad_clean_2)
+summary(linear_1)
+```
+
+* Also controlling for age, gender, education, condition(?)
+
+```{r}
+linear_2 = lm(casi_t_score ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2)
+summary(linear_2)
+```
 
 
 
