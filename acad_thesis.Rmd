@@ -12,6 +12,7 @@ library(rstatix)
 library(ggplot2)
 library(broom)
 library(tableone)
+library(oddsratio)
 ```
 
 ## Importing and cleaning data
@@ -67,7 +68,25 @@ acad_clean = acad_data %>%
                        "360" = "Indonesia", 
                        "458" = "Malaysia", 
                        "888" = "Other", 
-                       "704" = "Vietnam" )
+                       "704" = "Vietnam" ),
+    c14_overall = factor(c14_overall, labels = c(
+      "Normal control", 
+      "Scores below cutoff for dementia/insufficient functional impairment for dementia (possible dementia)", 
+      "Scores close to dementia/has functional impairment (possible dementia)", 
+      "Dementia by both cognitive testing in real time and history of functional loss", 
+      "Cognition intact; functional intact; has significant cognitive complaints (SCC)", 
+      "MCI or SCC")),
+    c14_overall = factor(c14_overall, levels = c(
+      "Normal control",
+      "Cognition intact; functional intact; has significant cognitive complaints (SCC)",
+      "MCI or SCC",
+      "Scores below cutoff for dementia/insufficient functional impairment for dementia (possible dementia)", 
+      "Scores close to dementia/has functional impairment (possible dementia)", 
+      "Dementia by both cognitive testing in real time and history of functional loss"
+    )),
+    c14_secg = factor(c14_secg, labels = c(
+      "No Dementia (includes MCI and SCC)", 
+      "Dementia (NACC)"))
   )
 ```
 
@@ -115,9 +134,10 @@ acad_clean_2 = acad_clean_2 %>%
   casi2_score = ifelse(is.na(casi2_score), 0, casi2_score),
   casi_t_score = casi_score + casi2_score,
   
-  medi_score = as.factor(ifelse(parta_a2score < 5, "low",
-                           ifelse(parta_a2score < 9, "middle",
+  medi_score = as.factor(ifelse(parta_a2score < 6, "low",
+                           ifelse(parta_a2score < 10, "middle",
                          "high"))),
+  medi_score = factor(medi_score, levels = c("low", "middle", "high")),
 
   hypertension = condition1,
   diabetes = condition2,
@@ -138,9 +158,10 @@ acad_clean_2 = acad_clean_2 %>%
   
   select(-condition1, -condition2, -condition3, -condition4, -condition5, -condition6, -condition7, -condition8, -condition9, -condition10, -condition11, -condition12, -condition13, -condition14, -condition15, -casi_score, -casi2_score) %>%
   
-select(
+  select(
   "acad_id", "age", "gender", "country", "generation", "degree", "parta_a2score", "medi_score", "casi_t_score", everything()
-)
+) 
+  
 ```
 
 Picking comorbidities:
@@ -211,7 +232,11 @@ selected the top three comorbidities (cholesterol, hypertension, and diabetes). 
 
 ```{r}
 acad_clean_2 = acad_clean_2 %>%
-  select(-myo_infarc, -cong_heart_f, -stroke, -head_injury, -seizure, -hiv, -sleep_apnea, -sleep_disorder, -other_cog, -covid, -vac_covid, -kidney)
+  mutate(
+    cholesterol = factor(cholesterol, labels = c("No", "Yes", "Unsure")),
+    hypertension = factor(hypertension, labels = c("No", "Yes", "Unsure")),
+    diabetes = factor(diabetes, labels = c("No", "Yes", "Unsure"))) %>%
+select(-myo_infarc, -cong_heart_f, -stroke, -head_injury, -seizure, -hiv, -sleep_apnea, -sleep_disorder, -other_cog, -covid, -vac_covid, -kidney)
 
 skimr::skim(acad_clean_2)
 ```
@@ -250,8 +275,8 @@ catVars = c("gender", "degree", "country", "medi_score","c14_overall", "c14_secg
 
 table1 = CreateTableOne(vars = listVars, data = acad_clean_2, factorVars = catVars)
 
-table1
-
+print(table1, formatOptions = list(big.mark = ","))
+print(table1, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
 ```
 
 #### Demographic and clinical characteristics by Mediterranean diet score tertiles 
@@ -261,18 +286,20 @@ listVars_1 = c("age", "gender", "degree", "country", "casi_t_score", "c14_overal
 
 table2 = CreateTableOne(listVars_1, data = acad_clean_2, factorVars = catVars, strata = c("medi_score"))
 
-table2 
+print(table2, formatOptions = list(big.mark = ","))
+print(table2, exact = "stage", formatOptions = list(big.mark = ","), quote = FALSE, noSpaces = TRUE)
 ```
 
 
 #### Demographic, clinical, and dietary characteristics for subjects by c14_overall (or c14_secg?)
 
 ```{r}
-listVars_2 = c("age", "gender", "degree", "country", "casi_t_score", "c14_overall", "cholesterol", "hypertension", "diabetes")
+listVars_2 = c("age", "gender", "degree", "country", "medi_score", "casi_t_score", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
-table3 = CreateTableOne(listVars_2, data = acad_clean_2, factorVars = catVars, strata = c("c14_secg"))
+table3 = CreateTableOne(listVars_2, data = acad_clean_2, factorVars = catVars, strata = c("c14_overall"))
 
-table3
+print(table3, formatOptions = list(big.mark = ","))
+print(table3, exact = "stage", quote = FALSE, noSpaces = TRUE)
 ```
 
 
@@ -288,20 +315,45 @@ table(acad_clean_2$medi_score, acad_clean_2$c14_overall)
 chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_overall)
 ```
 
-#### Logsitic regression for medi_score and outcome (c14_secg)
+#### Logsitic regression for medi_score/parta_a20score and outcome (c14_secg)
 
 ```{r}
 logit_1 = glm(c14_secg ~ medi_score, data = acad_clean_2, family = "binomial")
 summary(logit_1)
+
+logit_2 = glm(c14_secg ~ parta_a2score, data = acad_clean_2, family = "binomial")
+summary(logit_2)
 ```
 
 * Also controlling for age, gender, education, condition(?)
 
 ```{r}
-logit_2 = glm(c14_secg ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
-summary(logit_2)
+logit_3 = glm(c14_secg ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
+summary(logit_3)
+
+logit_4 = glm(c14_secg ~ parta_a2score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
+summary(logit_4)
 ```
 
+#### Logsitic regression for medi_score/parta_a2score and outcome (c14_overall)
+
+```{r}
+logit_5 = glm(c14_overall ~ medi_score, data = acad_clean_2, family = "binomial")
+summary(logit_5)
+
+logit_6 = glm(c14_overall ~ parta_a2score, data = acad_clean_2, family = "binomial")
+summary(logit_6)
+```
+
+* Also controlling for age, gender, education, condition(?)
+
+```{r}
+logit_7 = glm(c14_overall ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
+summary(logit_7)
+
+logit_8 = glm (c14_overall ~ parta_a2score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
+summary(logit_8)
+```
 
 #### ANOVA test for association between exposure (medi_score) and outcome (casi_t_score)
 
@@ -310,18 +362,24 @@ one.way = aov(casi_t_score ~ medi_score, data = acad_clean_2)
 summary(one.way)
 ```
 
-#### Linear regression for medi_score and outcome (casi_t_score)
+#### Linear regression for medi_score/parta_a2score and outcome (casi_t_score)
 
 ```{r}
 linear_1 = lm(casi_t_score ~ medi_score, data = acad_clean_2)
 summary(linear_1)
+
+linear_2 = lm(casi_t_score ~ parta_a2score, data = acad_clean_2)
+summary(linear_2)
 ```
 
 * Also controlling for age, gender, education, condition(?)
 
 ```{r}
-linear_2 = lm(casi_t_score ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2)
-summary(linear_2)
+linear_3 = lm(casi_t_score ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2)
+summary(linear_3)
+
+linear_4 = lm(casi_t_score ~ parta_a2score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2)
+summary(linear_4)
 ```
 
 
