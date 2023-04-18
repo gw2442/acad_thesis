@@ -13,6 +13,7 @@ library(broom)
 library(tableone)
 library(oddsratio)
 library(flextable)
+library(gtsummary)
 ```
 
 ## Importing and cleaning data
@@ -481,7 +482,7 @@ thesis_final %>%
   geom_boxplot()
 ```
 
-### Regression 
+### Regression - medi tertiles
 
 Covariates: 
 * age
@@ -499,10 +500,12 @@ Covariates:
 #crude
 logit_1 = glm(casi_tertiles ~ medi_score, data = thesis_final, family = "binomial")
 summary(logit_1)
+tbl_regression(logit_1, exponentiate = TRUE)
 
 #adjusted: logistic regression including covariates
 logit_2 = glm(casi_tertiles ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
 summary(logit_2)
+tbl_regression(logit_2, exponentiate = TRUE)
 ```
 
 
@@ -511,10 +514,12 @@ summary(logit_2)
 ```{r}
 logit_3 = glm(comt_tertiles ~ medi_score, data = thesis_final, family = "binomial")
 summary(logit_3)
+tbl_regression(logit_3, exponentiate = TRUE)
 
 #logistic regression including covariates
 logit_4 = glm(comt_tertiles ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
 summary(logit_4)
+tbl_regression(logit_4, exponentiate = TRUE)
 ```
 
 
@@ -523,10 +528,12 @@ summary(logit_4)
 ```{r}
 linear_1 = lm(casi_total ~ medi_score, data = thesis_final)
 summary(linear_1)
+tbl_regression(linear_1)
 
 #linear regression including covariates
 linear_2 = lm(casi_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
 summary(linear_2)
+tbl_regression(linear_2)
 ```
 
 
@@ -535,9 +542,67 @@ summary(linear_2)
 ```{r}
 linear_3 = lm(comt_total ~ medi_score, data = thesis_final)
 summary(linear_3)
+tbl_regression(linear_3)
 
 #linear regression including covariates
 linear_4 = lm(comt_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
 summary(linear_4)
+tbl_regression(linear_4)
+```
+
+
+### Regression - medi continuous (parta_a2score)
+
+#### Logistic regression for parta_a2score and casi_tertiles
+
+```{r}
+logit_5 = glm(casi_tertiles ~ parta_a2score, data = thesis_final, family = "binomial")
+summary(logit_5)
+tbl_regression(logit_5, exponentiate = TRUE)
+#logistic regression including covariates
+
+logit_6 = glm(casi_tertiles ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
+summary(logit_6)
+tbl_regression(logit_6, exponentiate = TRUE)
+```
+
+#### Logistic regression for parta_a2score and comt_tertiles
+
+```{r}
+logit_7 = glm(comt_tertiles ~ parta_a2score, data = thesis_final, family = "binomial")
+summary(logit_7)
+tbl_regression(logit_7, exponentiate = TRUE)
+#logistic regression including covariates
+
+logit_8 = glm(comt_tertiles ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
+summary(logit_8)
+tbl_regression(logit_8, exponentiate = TRUE)
+
+```
+
+#### Linear regression for parta_a2score and casi_total
+
+```{r}
+linear_5 = lm(casi_total ~ parta_a2score, data = thesis_final)
+summary(linear_5)
+tbl_regression(linear_5)
+
+#linear regression including covariates
+linear_6 = lm(casi_total ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
+summary(linear_6)
+tbl_regression(linear_6)
+```
+
+#### Linear regression for parta_a2score and comt_total
+
+```{r}
+linear_7 = lm(comt_total ~ parta_a2score, data = thesis_final)
+summary(linear_7)
+tbl_regression(linear_7)
+
+#linear regression including covariates
+linear_8 = lm(comt_total ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
+summary(linear_8)
+tbl_regression(linear_8)
 ```
 
