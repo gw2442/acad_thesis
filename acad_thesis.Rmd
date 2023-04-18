@@ -1,9 +1,8 @@
 ---
-title: "acad_thesis"
+title: "acad_thesis_final"
 output: html_document
-date: "2023-03-28"
+date: "2023-04-18"
 ---
-
 ```{r}
 library(dplyr)
 library(tidyverse)
@@ -13,6 +12,7 @@ library(ggplot2)
 library(broom)
 library(tableone)
 library(oddsratio)
+library(flextable)
 ```
 
 ## Importing and cleaning data
@@ -23,17 +23,17 @@ Raw CSV file used instead due to column misalignment in the first dataset.
 acad_data = read_csv(file = "./data/ACAD-202301-Columbia-Wei-20230331-raw.csv") %>%
   janitor::clean_names() 
 ```
- 
+
 The CSV file was downloaded from the ACAD dataset. The dataset `acad_data` has 311 observations and 665 variables. The relevant variables were then selected for further cleaning.
  
 ```{r}
 acad_clean = acad_data %>%
   select(
-    "acad_id", "age","degree", "gender", "country", "generation", 
+    "acad_id", "age","degree", "gender", "country", "generation", "redcap_data_access_group", "arrival_year",
     
     "parta_a201", "parta_a202", "parta_a203", "parta_a204", "parta_a205", "parta_a206", "parta_a207", "parta_a208", "parta_a209", "parta_a210", "parta_a211", "parta_a212", "parta_a213", "parta_a214", "parta_a2score",
     
-    "memory", "orient", "judgment", "commun", "homehobb", "perscare", "cdr_sum", "cdrglob", "comport", "cdrlang",
+    "memory", "orient", "judgment", "commun", "homehobb", "perscare", "cdr_sum", "cdrglob",
     
     "bills", "taxes", "shopping", "games", "stove", "mealprep", "events", "payattn", "remdates", "travel", "fas", 
     
@@ -44,8 +44,270 @@ acad_clean = acad_data %>%
     "casi_score", "casi2_score", "c14_overall", "c14_secg",
     
     "condition1", "condition2", "condition3", "condition4", "condition5", "condition6", "condition7", "condition8", "condition9", "condition10", "condition11", "condition12", "condition13", "condition14", "condition15"
+  ) 
+```
+
+### Demographic Dataset
+
+A dataset containing only demographic and covariate variables was created
+
+```{r}
+acad_dem = acad_clean %>%
+  select("acad_id", "redcap_data_access_group", "age","degree", "gender", "country", "generation",  "arrival_year", "condition1", "condition2", "condition3", "condition4", "condition5", "condition6", "condition7", "condition8", "condition9", "condition10", "condition11", "condition12", "condition13", "condition14", "condition15")
+```
+
+Calculating immigration years; condition variables renamed 
+
+```{r}
+acad_dem = acad_dem %>%
+  mutate(
+  immigration_years = 2023 - arrival_year,
+  
+  hypertension = condition1,
+  diabetes = condition2,
+  cholesterol = condition3,
+  myo_infarc = condition4,
+  cong_heart_f = condition5,
+  stroke = condition6, 
+  head_injury = condition7,
+  seizure = condition8,
+  hiv = condition9,
+  sleep_apnea = condition10,
+  sleep_disorder = condition11,
+  other_cog = condition12,
+  covid = condition13,
+  vac_covid = condition14,
+  kidney = condition15,
   ) %>%
   
+  select(-arrival_year, -condition1, -condition2, -condition3, -condition4, -condition5, -condition6, -condition7, -condition8, -condition9, -condition10, -condition11, -condition12, -condition13, -condition14, -condition15) 
+```
+
+Picking comobidities: 
+
+```{r}
+acad_dem%>%
+  group_by(hypertension) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(diabetes) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(cholesterol) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(myo_infarc) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(cong_heart_f) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(stroke) %>%
+  summarise(n_obs = n())
+
+acad_dem%>%
+  group_by(head_injury) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(seizure) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(hiv) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(sleep_apnea) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(sleep_disorder) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(other_cog) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(covid) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(vac_covid) %>%
+  summarise(n_obs = n())
+
+acad_dem %>%
+  group_by(kidney) %>%
+  summarise(n_obs = n())
+```
+
+Selected the top three comorbidities (cholesterol, hypertension, and diabetes). Dropped all remaining comorbidities. 
+
+```{r}
+acad_dem = acad_dem %>%
+  mutate(
+    cholesterol = factor(cholesterol, labels = c("No", "Yes", "Unsure")),
+    hypertension = factor(hypertension, labels = c("No", "Yes", "Unsure")),
+    diabetes = factor(diabetes, labels = c("No", "Yes", "Unsure"))) %>%
+select(-myo_infarc, -cong_heart_f, -stroke, -head_injury, -seizure, -hiv, -sleep_apnea, -sleep_disorder, -other_cog, -covid, -vac_covid, -kidney)
+```
+
+Remove participants with no information other than ACAD ID or recruitment site (n = 22)
+
+```{r}
+acad_dem <- acad_dem[!rowSums(is.na(acad_dem[, -c(1,2)])) == (ncol(acad_dem) -2),]
+```
+
+### Dietary Dataset
+
+```{r}
+acad_diet = acad_clean %>%
+  select("acad_id","parta_a201", "parta_a202", "parta_a203", "parta_a204", "parta_a205", "parta_a206", "parta_a207", "parta_a208", "parta_a209", "parta_a210", "parta_a211", "parta_a212", "parta_a213", "parta_a214", "parta_a2score") %>%
+  mutate(
+  medi_score = as.factor(ifelse(parta_a2score < 6, "low",
+                           ifelse(parta_a2score < 10, "middle",
+                         "high"))),
+  medi_score = factor(medi_score, levels = c("low", "middle", "high"))) %>%
+  select("acad_id", "parta_a2score", "medi_score", everything())
+```
+
+Remove participants with no dietary information 
+
+```{r}
+acad_diet = acad_diet %>%
+  drop_na(parta_a2score)
+```
+*Removed participants with parta_a2score = 0 since those participants had NA for all parta_a2 questions
+
+(n total = 27)
+
+```{r}
+acad_diet = acad_diet %>%
+  filter(, parta_a2score != 0 )
+```
+
+
+#### Distribution of parta_a2score 
+
+Histogram of parta_a2score - since nicely distributed, no need to log transform
+```{r}
+hist_acad_diet_1 = hist(acad_diet$parta_a2score)
+x_values = seq(min(acad_diet$parta_a2score), max(acad_diet$parta_a2score), length = 100)
+y_values = dnorm(x_values, mean = mean(acad_diet$parta_a2score), sd = sd(acad_diet$parta_a2score))
+y_values = y_values * diff(hist_acad_diet_1$mids[1:2]) * length(acad_diet$parta_a2score)
+
+lines(x_values, y_values, lwd = 2)
+```
+
+Histogram of Medi Score
+```{r}
+acad_diet %>%
+  ggplot(aes(x = medi_score)) +
+  geom_bar()
+```
+
+### Cognitive Dataset
+
+```{r}
+acad_cog = acad_clean %>%
+  select(
+    "acad_id", "cdr_sum", "cdrglob", "fas", "clock_t", "comt_t1","comt_t2", "comt_t3","comt_d", "comt_dr", "casi_score", "casi2_score", "c14_overall", "c14_secg"
+  ) %>%
+  
+  mutate(
+  casi_score = ifelse(is.na(casi_score), 0, casi_score),
+  casi2_score = ifelse(is.na(casi2_score), 0, casi2_score),
+  casi_total = casi_score + casi2_score,
+  casi_total = replace(casi_total, casi_total == 0, NA),
+  
+  comt_total = comt_t1 + comt_t2 + comt_t3 + comt_d,
+  comt_total = ifelse(comt_total == 0, NA, comt_total
+  ))%>%
+    
+  select(
+"acad_id", "cdr_sum", "cdrglob", "fas", "clock_t", "comt_total", "comt_dr", "casi_total", "c14_overall", "c14_secg"
+  )
+```
+
+Removing participants with zero entries for cognitive measures (only participants with at lesat one entry for a cognitive measure is included) (n = 22)
+
+```{r}
+acad_cog = acad_cog %>%
+  mutate(
+  cog_sum = rowSums(acad_cog[,c("cdr_sum", "cdrglob", "fas", "clock_t", "comt_total", "comt_dr", "casi_total", "c14_overall", "c14_secg")], na.rm = TRUE)
+  )
+
+acad_cog = acad_cog %>%
+  filter(, cog_sum != 0) %>%
+  select(-cog_sum)
+```
+
+#### CASI distribution 
+```{r}
+hist_acad_cog_1 = hist(acad_cog$casi_total)
+```
+
+Heavy left skew distribution; must log transform to create tertiles 
+
+```{r}
+acad_cog = acad_cog %>%
+  mutate(
+    casi_tertiles = cut(log(casi_total),
+                        breaks = quantile(log(casi_total),
+                                          probs = seq(0, 1, 1/3),
+                                          na.rm = TRUE),
+                        labels = c("1", "2", "3"),
+                        include.lowest = TRUE,
+                        include.highest = TRUE)
+  )
+
+acad_cog %>%
+  ggplot(aes(x = casi_tertiles)) +
+  geom_bar()
+```
+
+#### COMT distribution 
+```{r}
+hist_acad_cog_2 = hist(acad_cog$comt_total)
+```
+
+Heavy left skew distribution; must log transform to create tertiles 
+
+```{r}
+acad_cog = acad_cog %>%
+  mutate(
+    comt_tertiles = cut(log(comt_total),
+                        breaks = quantile(log(comt_total),
+                                          probs = seq(0, 1, 1/3),
+                                          na.rm = TRUE),
+                        labels = c("1", "2", "3"),
+                        include.lowest = TRUE,
+                        include.highest = TRUE)
+  )
+
+acad_cog %>%
+  ggplot(aes(x = comt_tertiles)) +
+  geom_bar()
+```
+
+
+### Merging all datasets
+
+```{r}
+dem_diet = inner_join(acad_dem, acad_diet, by = "acad_id")
+thesis_final = inner_join(dem_diet, acad_cog, by = "acad_id")
+```
+
+Adding labels to final dataset
+
+```{r}
+thesis_final = thesis_final %>%
   mutate(
     degree = factor(degree, labels = c("Grade school or less", 
                                        "Some high school", 
@@ -69,6 +331,19 @@ acad_clean = acad_data %>%
                        "458" = "Malaysia", 
                        "888" = "Other", 
                        "704" = "Vietnam" ),
+
+    casi_tertiles = factor(casi_tertiles, labels = c(
+      "Low", "Medium", "High"
+      )),
+    casi_tertiles = factor(casi_tertiles, levels = c(
+      "Low", "Medium", "High"
+      )),
+    comt_tertiles = factor(comt_tertiles, labels = c(
+      "Low", "Medium", "High"
+      )),
+    comt_tertiles = factor(comt_tertiles, levels = c(
+      "Low", "Medium", "High"
+      )),
     c14_overall = factor(c14_overall, labels = c(
       "Normal control", 
       "Scores below cutoff for dementia/insufficient functional impairment for dementia (possible dementia)", 
@@ -88,300 +363,181 @@ acad_clean = acad_data %>%
       "No Dementia (includes MCI and SCC)", 
       "Dementia (NACC)"))
   )
+
+skimr::skim(thesis_final)
 ```
 
-A second dataset was created selecting only demographic variables, score variables, and potential confounders
-
-```{r}
-acad_clean_2 = acad_clean %>%
-  select(
-  "acad_id", "age","degree", "gender", "country", "generation", 
-    
-  "parta_a2score",
-    
-  "cdr_sum", "cdrglob", "comport", "cdrlang",
-    
-  "fas", 
-    
-  "clock_t",
-    
-  "comt_t1", "comt_t2", "comt_t3","comt_d", "comt_dr",
-    
-  "casi_score", "casi2_score", "c14_overall", "c14_secg",
-    
-    "condition1", "condition2", "condition3", "condition4", "condition5", "condition6", "condition7", "condition8", "condition9", "condition10", "condition11", "condition12", "condition13", "condition14", "condition15"
-  )
-```
-
-Excluded 11 subjects due to no dietary information available.
-Excluded 17 subjects due to entire survey information available
-Excluded 44 subjects due to no c14_overall and c14_secg information available.
-
-```{r}
-acad_clean_2 = acad_clean_2 %>%
-  drop_na(parta_a2score) %>%
-  drop_na(gender) %>%
-  drop_na(c14_overall) %>%
-  drop_na(c14_secg)
-```
-
-Combining casi and casi2 scores; categorizing dietary score; renaming condition variables 
-
-```{r}
-acad_clean_2 = acad_clean_2 %>%
-  mutate(
-  casi_score = ifelse(is.na(casi_score), 0, casi_score),
-  casi2_score = ifelse(is.na(casi2_score), 0, casi2_score),
-  casi_t_score = casi_score + casi2_score,
-  
-  medi_score = as.factor(ifelse(parta_a2score < 6, "low",
-                           ifelse(parta_a2score < 10, "middle",
-                         "high"))),
-  medi_score = factor(medi_score, levels = c("low", "middle", "high")),
-
-  hypertension = condition1,
-  diabetes = condition2,
-  cholesterol = condition3,
-  myo_infarc = condition4,
-  cong_heart_f = condition5,
-  stroke = condition6, 
-  head_injury = condition7,
-  seizure = condition8,
-  hiv = condition9,
-  sleep_apnea = condition10,
-  sleep_disorder = condition11,
-  other_cog = condition12,
-  covid = condition13,
-  vac_covid = condition14,
-  kidney = condition15,
-  ) %>%
-  
-  select(-condition1, -condition2, -condition3, -condition4, -condition5, -condition6, -condition7, -condition8, -condition9, -condition10, -condition11, -condition12, -condition13, -condition14, -condition15, -casi_score, -casi2_score) %>%
-  
-  select(
-  "acad_id", "age", "gender", "country", "generation", "degree", "parta_a2score", "medi_score", "casi_t_score", everything()
-) 
-  
-```
-
-Picking comorbidities:
-
-```{r}
-acad_clean_2 %>%
-  group_by(hypertension) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(diabetes) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(cholesterol) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(myo_infarc) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(cong_heart_f) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(stroke) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(head_injury) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(seizure) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(hiv) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(sleep_apnea) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(sleep_disorder) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(other_cog) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(covid) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(vac_covid) %>%
-  summarise(n_obs = n())
-
-acad_clean_2 %>%
-  group_by(kidney) %>%
-  summarise(n_obs = n())
-```
-
-selected the top three comorbidities (cholesterol, hypertension, and diabetes). Dropped all remaining comorbidities. 
-
-```{r}
-acad_clean_2 = acad_clean_2 %>%
-  mutate(
-    cholesterol = factor(cholesterol, labels = c("No", "Yes", "Unsure")),
-    hypertension = factor(hypertension, labels = c("No", "Yes", "Unsure")),
-    diabetes = factor(diabetes, labels = c("No", "Yes", "Unsure"))) %>%
-select(-myo_infarc, -cong_heart_f, -stroke, -head_injury, -seizure, -hiv, -sleep_apnea, -sleep_disorder, -other_cog, -covid, -vac_covid, -kidney)
-
-skimr::skim(acad_clean_2)
-```
-
-Final cleaned data set is comprised of 260 observations and 25 variables - 2 character, 3 factor, and 20 numeric.
+Final cleaned dataset is comprised of 303 observations and 38 variables - 3 character, 10 factor, and 25 numeric.
 
 ## Data Analysis
 
-Exposure variable: 
-
+Exposure variables: 
 * medi_score
 
-Outcome variables: 
+Outcome variables:
+* casi_total
+* comt_total 
 
-* casi_t_score
+Secondary outcome variables
 * c14_overall
 * c14_secg
+* clock_t (?)
+* fas (?)
 
-Covariates: 
-
+Covariates:
 * age
+* recruitment site (redcap_data_access_group)
 * gender
-* education level 
+* immigration years 
+* education level
 * cholesterol
 * hypertension
 * diabetes
 
-###Summary tables
+### Summary Tables 
 
-#### Overall demographic and clinical charactersitic table
+#### Overall demographic and clinical characteristic table
 
 ```{r}
-listVars = c("age", "gender", "degree", "country", "medi_score", "casi_t_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+listVars1 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "casi_total", "comt_total", "comt_dr", "fas", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
-catVars = c("gender", "degree", "country", "medi_score","c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
-table1 = CreateTableOne(vars = listVars, data = acad_clean_2, factorVars = catVars)
+table1 = CreateTableOne(vars = listVars1, data = thesis_final, factorVars = catVars)
 
-print(table1, formatOptions = list(big.mark = ","))
-print(table1, exact = "stage", quote = FALSE, noSpaces = TRUE, printToggle = FALSE)
+print(table1, formatOption = list(big.mark = ","))
 ```
 
 #### Demographic and clinical characteristics by Mediterranean diet score tertiles 
 
-```{r}
-listVars_1 = c("age", "gender", "degree", "country", "casi_t_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+* Did not include casi and comt tertiles 
 
-table2 = CreateTableOne(listVars_1, data = acad_clean_2, factorVars = catVars, strata = c("medi_score"))
+```{r}
+listVars_2 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "casi_total", "comt_total","comt_dr", "fas", "c14_overall", "c14_secg",  "cholesterol", "hypertension", "diabetes")
+
+catVars = c("redcap_data_access_group", "gender", "country", "degree", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+
+table2 = CreateTableOne(vars = listVars_2, data = thesis_final, factorVars = catVars, strata = c("medi_score"))
 
 print(table2, formatOptions = list(big.mark = ","))
-print(table2, exact = "stage", formatOptions = list(big.mark = ","), quote = FALSE, noSpaces = TRUE)
 ```
 
-
-#### Demographic, clinical, and dietary characteristics for subjects by c14_overall (or c14_secg?)
+#### Demographic, clinical, and dietary characteristics for subjects by casi tertiles 
 
 ```{r}
-listVars_2 = c("age", "gender", "degree", "country", "medi_score", "casi_t_score", "c14_secg", "cholesterol", "hypertension", "diabetes")
+listVars_3 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "comt_total", "comt_dr", "fas", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
-table3 = CreateTableOne(listVars_2, data = acad_clean_2, factorVars = catVars, strata = c("c14_overall"))
+catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+
+table3 = CreateTableOne(vars = listVars_3, data = thesis_final, factorVars = catVars, strata = c("casi_tertiles"))
 
 print(table3, formatOptions = list(big.mark = ","))
-print(table3, exact = "stage", quote = FALSE, noSpaces = TRUE)
 ```
 
-
-#### Chi-square test for association between exposure (medi_score) and outcome (c14_secg, c14_overall)
-
+#### Demographic, clinical, and dietary characteristics for subjects by comt tertiles
 ```{r}
-acad_clean_2$medi_score = factor(acad_clean_2$medi_score, levels = c("low", "middle", "high"))
+listVars_4 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "casi_total", "comt_dr", "fas", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
-table(acad_clean_2$medi_score, acad_clean_2$c14_secg)
-chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_secg)
+catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
-table(acad_clean_2$medi_score, acad_clean_2$c14_overall)
-chisq.test(acad_clean_2$medi_score, acad_clean_2$c14_overall)
+table4 = CreateTableOne(vars = listVars_4, data = thesis_final, factorVars = catVars, strata = c("comt_tertiles"))
+
+print(table4, formatOptions = list(big.mark = ","))
 ```
 
-#### Logsitic regression for medi_score/parta_a20score and outcome (c14_secg)
+### Graphs 
+
+#### Casi score by age 
 
 ```{r}
-logit_1 = glm(c14_secg ~ medi_score, data = acad_clean_2, family = "binomial")
+thesis_final %>%
+  ggplot(aes(x = age, y = casi_total)) +
+  geom_point() +
+  stat_smooth(method = "loess", se = FALSE) +
+  labs (
+    x = "Age",
+    y = "CASI Score"
+  )
+```
+
+#### Comt score by age
+
+```{r}
+thesis_final %>%
+  ggplot(aes(x = age, y = comt_total)) +
+  geom_point() +
+  stat_smooth(method = "loess", se = FALSE) +
+  labs (
+    x = "Age",
+    y = "COMT Score"
+  )
+```
+
+### Cognitive score by MeDi tertiles
+
+```{r}
+thesis_final %>%
+  ggplot(aes(x = medi_score, y = casi_total)) +
+  geom_boxplot()
+```
+
+### Regression 
+
+Covariates: 
+* age
+* recruitment site (redcap_data_access_group)
+* gender
+* immigration years 
+* education level
+* cholesterol
+* hypertension
+* diabetes
+
+#### Logistic regression for medi_score and casi_tertiles 
+
+```{r}
+#crude
+logit_1 = glm(casi_tertiles ~ medi_score, data = thesis_final, family = "binomial")
 summary(logit_1)
 
-logit_2 = glm(c14_secg ~ parta_a2score, data = acad_clean_2, family = "binomial")
+#adjusted: logistic regression including covariates
+logit_2 = glm(casi_tertiles ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
 summary(logit_2)
 ```
 
-* Also controlling for age, gender, education, condition(?)
+
+#### Logistic regression for medi_score and comt_tertiles
 
 ```{r}
-logit_3 = glm(c14_secg ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
+logit_3 = glm(comt_tertiles ~ medi_score, data = thesis_final, family = "binomial")
 summary(logit_3)
 
-logit_4 = glm(c14_secg ~ parta_a2score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
+#logistic regression including covariates
+logit_4 = glm(comt_tertiles ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
 summary(logit_4)
 ```
 
-#### Logsitic regression for medi_score/parta_a2score and outcome (c14_overall)
+
+#### Linear regression for medi_score and casi_total
 
 ```{r}
-logit_5 = glm(c14_overall ~ medi_score, data = acad_clean_2, family = "binomial")
-summary(logit_5)
-
-logit_6 = glm(c14_overall ~ parta_a2score, data = acad_clean_2, family = "binomial")
-summary(logit_6)
-```
-
-* Also controlling for age, gender, education, condition(?)
-
-```{r}
-logit_7 = glm(c14_overall ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
-summary(logit_7)
-
-logit_8 = glm (c14_overall ~ parta_a2score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2, family = "binomial")
-summary(logit_8)
-```
-
-#### ANOVA test for association between exposure (medi_score) and outcome (casi_t_score)
-
-```{r}
-one.way = aov(casi_t_score ~ medi_score, data = acad_clean_2)
-summary(one.way)
-```
-
-#### Linear regression for medi_score/parta_a2score and outcome (casi_t_score)
-
-```{r}
-linear_1 = lm(casi_t_score ~ medi_score, data = acad_clean_2)
+linear_1 = lm(casi_total ~ medi_score, data = thesis_final)
 summary(linear_1)
 
-linear_2 = lm(casi_t_score ~ parta_a2score, data = acad_clean_2)
+#linear regression including covariates
+linear_2 = lm(casi_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
 summary(linear_2)
 ```
 
-* Also controlling for age, gender, education, condition(?)
+
+#### Linear regression for medi_score and comt_total
 
 ```{r}
-linear_3 = lm(casi_t_score ~ medi_score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2)
+linear_3 = lm(comt_total ~ medi_score, data = thesis_final)
 summary(linear_3)
 
-linear_4 = lm(casi_t_score ~ parta_a2score + age + gender + degree + cholesterol + diabetes + hypertension, data = acad_clean_2)
+#linear regression including covariates
+linear_4 = lm(comt_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
 summary(linear_4)
 ```
-
-
-
 
