@@ -38,6 +38,8 @@ acad_clean = acad_data %>%
     
     "bills", "taxes", "shopping", "games", "stove", "mealprep", "events", "payattn", "remdates", "travel", "fas", 
     
+    "ani_total", "veg_total",
+    
     "clock1", "clock2", "clock3", "clock4", "clock5", "clock6", "clock7", "clock8", "clock9", "clock10", "clock11", "clock12", "clock13", "clock14", "clock15", "clock_t",
     
     "word1_t1", "word2_t1", "word3_t1", "word4_t1", "word5_t1", "word6_t1", "word7_t1", "word8_t1", "word9_t1", "word10_t1", "comt_t1","word1_t2", "word2_t2", "word3_t2", "word4_t2", "word5_t2", "word6_t2", "word7_t2", "word8_t2", "word9_t2", "word10_t2", "comt_t2", "word1_t3", "word2_t3", "word3_t3", "word4_t3", "word5_t3", "word6_t3", "word7_t3", "word8_t3", "word9_t3", "word10_t3", "comt_t3","word1_d", "word2_d", "word3_d", "word4_d", "word5_d", "word6_d", "word7_d", "word8_d", "word9_d", "word10_d", "comt_d", "item1", "item2", "item3", "item4", "item5", "item6", "item7", "item8", "item9", "item10", "word1_dr", "word2_dr", "word3_dr", "word4_dr", "word5_dr", "word6_dr", "word7_dr", "word8_dr","word9_dr", "word10_dr", "comt_dr",
@@ -218,10 +220,12 @@ acad_diet %>%
 ```{r}
 acad_cog = acad_clean %>%
   select(
-    "acad_id", "cdr_sum", "cdrglob", "fas", "clock_t", "comt_t1","comt_t2", "comt_t3","comt_d", "comt_dr", "casi_score", "casi2_score", "c14_overall", "c14_secg"
+    "acad_id", "cdr_sum", "cdrglob", "fas", "ani_total", "veg_total","clock_t", "comt_t1","comt_t2", "comt_t3","comt_d", "comt_dr", "casi_score", "casi2_score", "c14_overall", "c14_secg"
   ) %>%
   
   mutate(
+  cft = ani_total + veg_total,
+  
   casi_score = ifelse(is.na(casi_score), 0, casi_score),
   casi2_score = ifelse(is.na(casi2_score), 0, casi2_score),
   casi_total = casi_score + casi2_score,
@@ -232,7 +236,7 @@ acad_cog = acad_clean %>%
   ))%>%
     
   select(
-"acad_id", "cdr_sum", "cdrglob", "fas", "clock_t", "comt_total", "comt_dr", "casi_total", "c14_overall", "c14_secg"
+"acad_id", "cdr_sum", "cdrglob", "fas","cft","clock_t", "comt_total", "comt_dr", "casi_total", "c14_overall", "c14_secg"
   )
 ```
 
@@ -241,7 +245,7 @@ Removing participants with zero entries for cognitive measures (only participant
 ```{r}
 acad_cog = acad_cog %>%
   mutate(
-  cog_sum = rowSums(acad_cog[,c("cdr_sum", "cdrglob", "fas", "clock_t", "comt_total", "comt_dr", "casi_total", "c14_overall", "c14_secg")], na.rm = TRUE)
+  cog_sum = rowSums(acad_cog[,c("cdr_sum", "cdrglob", "fas", "cft", "clock_t", "comt_total", "comt_dr", "casi_total", "c14_overall", "c14_secg")], na.rm = TRUE)
   )
 
 acad_cog = acad_cog %>%
@@ -382,8 +386,10 @@ Outcome variables:
 Secondary outcome variables
 * c14_overall
 * c14_secg
+* cft 
+* fas 
 * clock_t (?)
-* fas (?)
+
 
 Covariates:
 * age
@@ -400,7 +406,7 @@ Covariates:
 #### Overall demographic and clinical characteristic table
 
 ```{r}
-listVars1 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "casi_total", "comt_total", "comt_dr", "fas", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+listVars1 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "casi_total", "comt_total", "comt_dr", "fas","cft", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
 catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
@@ -414,7 +420,7 @@ print(table1, formatOption = list(big.mark = ","))
 * Did not include casi and comt tertiles 
 
 ```{r}
-listVars_2 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "casi_total", "comt_total","comt_dr", "fas", "c14_overall", "c14_secg",  "cholesterol", "hypertension", "diabetes")
+listVars_2 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "casi_total", "comt_total","comt_dr", "fas", "cft","c14_overall", "c14_secg",  "cholesterol", "hypertension", "diabetes")
 
 catVars = c("redcap_data_access_group", "gender", "country", "degree", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
@@ -426,7 +432,7 @@ print(table2, formatOptions = list(big.mark = ","))
 #### Demographic, clinical, and dietary characteristics for subjects by casi tertiles 
 
 ```{r}
-listVars_3 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "comt_total", "comt_dr", "fas", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+listVars_3 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "comt_total", "comt_dr", "fas", "cft","c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
 catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
@@ -437,7 +443,7 @@ print(table3, formatOptions = list(big.mark = ","))
 
 #### Demographic, clinical, and dietary characteristics for subjects by comt tertiles
 ```{r}
-listVars_4 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "casi_total", "comt_dr", "fas", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+listVars_4 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "casi_total", "comt_dr", "fas", "cft", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
 catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
@@ -482,7 +488,7 @@ thesis_final %>%
   geom_boxplot()
 ```
 
-### Regression - medi tertiles
+### Cross sectional analysis 
 
 Covariates: 
 * age
@@ -494,115 +500,292 @@ Covariates:
 * hypertension
 * diabetes
 
-#### Logistic regression for medi_score and casi_tertiles 
+
+#### Linear regression 
+
+Linear regression between casi_total and medi_score
+```{r}
+#crude
+linear1 = lm(casi_total ~ medi_score, data = thesis_final)
+summary(linear1)
+tbl_regression(linear1)
+
+#model 1: age, gender, degree
+linear1_model_1 = lm(casi_total ~ medi_score + age + gender + degree, data = thesis_final)
+summary(linear1_model_1)
+tbl_regression(linear1_model_1)
+
+#model 2: age, gender, degree, redcap_data_access_group, immigration_years, cholesterol, diabetes, hypertension
+linear1_model_2 = lm(casi_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
+summary(linear1_model_2)
+tbl_regression(linear1_model_2)
+```
+
+Linear regression between casi_total and parta_a2score
+```{r}
+#crude
+linear2 = lm(casi_total ~ parta_a2score, data = thesis_final)
+summary(linear2)
+tbl_regression(linear2)
+
+#model 1: age, gender, degree
+linear2_model_1 = lm(casi_total ~ parta_a2score + age + gender + degree, data = thesis_final)
+summary(linear2_model_1)
+tbl_regression(linear2_model_1)
+
+#model 2: age, gender, degree, redcap_data_access_group, immigration_years, cholesterol, diabetes, hypertension
+linear2_model_2 = lm(casi_total ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
+summary(linear2_model_2)
+tbl_regression(linear2_model_2)
+```
+
+Linear regression between comt_total and medi_score
+```{r}
+#crude
+linear3 = lm(comt_total ~ medi_score, data = thesis_final)
+summary(linear3)
+tbl_regression(linear3)
+
+#model 1: age, gender, degree
+linear3_model_1 = lm(comt_total ~ medi_score + age + gender + degree, data = thesis_final)
+summary(linear3_model_1)
+tbl_regression(linear3_model_1)
+
+#model 2: age, gender, degree, redcap_data_access_group, immigration_years, cholesterol, diabetes, hypertension
+linear3_model_2 = lm(comt_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
+summary(linear3_model_2)
+tbl_regression(linear3_model_2)
+```
+
+Linear regression between comt_total and parta_a2score
+```{r}
+#crude
+linear4 = lm(comt_total ~ parta_a2score, data = thesis_final)
+summary(linear4)
+tbl_regression(linear4)
+
+#model 1: age, gender, degree
+linear4_model_1 = lm(comt_total ~ parta_a2score + age + gender + degree, data = thesis_final)
+summary(linear4_model_1)
+tbl_regression(linear4_model_1)
+
+#model 2: age, gender, degree, redcap_data_access_group, immigration_years, cholesterol, diabetes, hypertension
+linear4_model_2 = lm(comt_total ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
+summary(linear4_model_2)
+tbl_regression(linear4_model_2)
+```
+
+### Exploratory analysis
+
+Logistic regression between clinical diagnosis (c14_secg) and medi_score
 
 ```{r}
 #crude
-logit_1 = glm(casi_tertiles ~ medi_score, data = thesis_final, family = "binomial")
-summary(logit_1)
-tbl_regression(logit_1, exponentiate = TRUE)
-
-#adjusted: logistic regression including covariates
-logit_2 = glm(casi_tertiles ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
-summary(logit_2)
-tbl_regression(logit_2, exponentiate = TRUE)
+logit1 = glm(c14_secg ~ medi_score, data = thesis_final, family = "binomial")
+summary(logit1)
+tbl_regression(logit1)
 ```
 
 
-#### Logistic regression for medi_score and comt_tertiles
+Linear regression between other cognitive tests and medi_score
+
+FAS:
+```{r}
+#crude
+linear5 = lm(fas ~ medi_score, data = thesis_final)
+summary(linear5)
+tbl_regression(linear5)
+```
+
+CFT:
+```{r}
+#crude
+linear6 = lm(cft ~ medi_score, data = thesis_final)
+summary(linear6)
+tbl_regression(linear6)
+```
+
+#### Exclude dementia subjects from analysis and repeat association between medi_score and casi_toatl/comt_total 
+```{r}
+no_dementia = thesis_final 
+
+no_dementia = no_dementia %>%
+  filter(, c14_secg != "Dementia (NACC)")
+```
+
+Linear regression between casi_total and medi_score
+```{r}
+#crude
+linear7 = lm(casi_total ~ medi_score, data = no_dementia)
+summary(linear7)
+tbl_regression(linear7)
+
+#model 1: age, gender, degree
+linear7_model_1 = lm(casi_total ~ medi_score + age + gender + degree, data = no_dementia)
+summary(linear7_model_1)
+tbl_regression(linear7_model_1)
+
+#model 2: age, gender, degree, redcap_data_access_group, immigration_years, cholesterol, diabetes, hypertension
+linear7_model_2 = lm(casi_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = no_dementia)
+summary(linear7_model_2)
+tbl_regression(linear7_model_2)
+```
+
+Linear regression between casi_total and parta_a2score
+```{r}
+#crude
+linear8 = lm(casi_total ~ parta_a2score, data = no_dementia)
+summary(linear8)
+tbl_regression(linear8)
+
+#model 1: age, gender, degree
+linear8_model_1 = lm(casi_total ~ parta_a2score + age + gender + degree, data = no_dementia)
+summary(linear8_model_1)
+tbl_regression(linear8_model_1)
+
+#model 2: age, gender, degree, redcap_data_access_group, immigration_years, cholesterol, diabetes, hypertension
+linear8_model_2 = lm(casi_total ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = no_dementia)
+summary(linear8_model_2)
+tbl_regression(linear8_model_2)
+```
+
+Linear regression between comt_total and medi_score
+```{r}
+#crude
+linear9 = lm(comt_total ~ medi_score, data = no_dementia)
+summary(linear9)
+tbl_regression(linear9)
+
+#model 1: age, gender, degree
+linear9_model_1 = lm(comt_total ~ medi_score + age + gender + degree, data = no_dementia)
+summary(linear9_model_1)
+tbl_regression(linear9_model_1)
+
+#model 2: age, gender, degree, redcap_data_access_group, immigration_years, cholesterol, diabetes, hypertension
+linear9_model_2 = lm(comt_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = no_dementia)
+summary(linear9_model_2)
+tbl_regression(linear9_model_2)
+```
+
+Linear regression between comt_total and parta_a2score
+```{r}
+#crude
+linear10= lm(comt_total ~ parta_a2score, data = no_dementia)
+summary(linear10)
+tbl_regression(linear10)
+
+#model 1: age, gender, degree
+linear10_model_1 = lm(comt_total ~ parta_a2score + age + gender + degree, data = no_dementia)
+summary(linear10_model_1)
+tbl_regression(linear10_model_1)
+
+#model 2: age, gender, degree, redcap_data_access_group, immigration_years, cholesterol, diabetes, hypertension
+linear10_model_2 = lm(comt_total ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = no_dementia)
+summary(linear10_model_2)
+tbl_regression(linear10_model_2)
+```
+
+#### Individual food components and cognition association 
 
 ```{r}
-logit_3 = glm(comt_tertiles ~ medi_score, data = thesis_final, family = "binomial")
-summary(logit_3)
-tbl_regression(logit_3, exponentiate = TRUE)
+#parta_a201: Olive oil as main cooking fat?
+parta_a201_fit_casi = lm(casi_total ~ parta_a201, data = thesis_final)
+summary(parta_a201_fit_casi)
 
-#logistic regression including covariates
-logit_4 = glm(comt_tertiles ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
-summary(logit_4)
-tbl_regression(logit_4, exponentiate = TRUE)
+parta_a201_fit_comt = lm(comt_total ~ parta_a201, data = thesis_final)
+summary(parta_a201_fit_comt)
+
+#parta_a202: More than 4 tablespoons of olive oil?
+parta_a202_fit_casi = lm(casi_total ~ parta_a202, data = thesis_final)
+summary(parta_a202_fit_casi)
+
+parta_a202_fit_comt = lm(comt_total ~ parta_a202, data = thesis_final)
+summary(parta_a202_fit_comt)
+
+#parta_a203: 2 or more servings of vegetable in a day?
+parta_a203_fit_casi = lm(casi_total ~ parta_a203, data = thesis_final)
+summary(parta_a203_fit_casi)
+
+parta_a203_fit_comt = lm(comt_total ~ parta_a203, data = thesis_final)
+summary(parta_a203_fit_comt)
+
+#parta_a204: 3 or more servings of fruit per day?
+parta_a204_fit_casi = lm(casi_total ~ parta_a204, data = thesis_final)
+summary(parta_a204_fit_casi)
+
+parta_a204_fit_comt = lm(comt_total ~ parta_a204, data = thesis_final)
+summary(parta_a204_fit_comt)
+
+#parta_a205: Butter, margarine, or cream less than once daily?
+parta_a205_fit_casi = lm(casi_total ~ parta_a205, data = thesis_final)
+summary(parta_a205_fit_casi)
+
+parta_a205_fit_comt = lm(comt_total ~ parta_a205, data = thesis_final)
+summary(parta_a205_fit_comt)
+
+#parta_a206: Beef, pork, or other meat less than daily?
+parta_a206_fit_casi = lm(casi_total ~ parta_a206, data = thesis_final)
+summary(parta_a206_fit_casi)
+
+parta_a206_fit_comt = lm(comt_total ~ parta_a206, data = thesis_final)
+summary(parta_a206_fit_comt)
+
+#parta_a207: Sweetened/carbonated beverages less often than daily?
+parta_a207_fit_casi = lm(casi_total ~ parta_a207, data = thesis_final)
+summary(parta_a207_fit_casi)
+
+parta_a207_fit_comt = lm(comt_total ~ parta_a207, data = thesis_final)
+summary(parta_a207_fit_comt)
+
+#parta_a208: At least 7 glasses of wine per week?
+parta_a208_fit_casi = lm(casi_total ~ parta_a208, data = thesis_final)
+summary(parta_a208_fit_casi)
+
+parta_a208_fit_comt = lm(comt_total ~ parta_a208, data = thesis_final)
+summary(parta_a208_fit_comt)
+
+#parta_a209: 3 or more servings of lentils, peas, beans, soybeans, or tofu/week?
+parta_a209_fit_casi = lm(casi_total ~ parta_a209, data = thesis_final)
+summary(parta_a209_fit_casi)
+
+parta_a209_fit_comt = lm(comt_total ~ parta_a209, data = thesis_final)
+summary(parta_a209_fit_comt)
+
+#parta_a210: 3 or more servings of fish/shellfish per week?
+parta_a210_fit_casi = lm(casi_total ~ parta_a210, data = thesis_final)
+summary(parta_a210_fit_casi)
+
+parta_a210_fit_comt = lm(comt_total ~ parta_a210, data = thesis_final)
+summary(parta_a210_fit_comt)
+
+#parta_a211: Fewer than 2 servings per week of sweets/pastries?
+parta_a211_fit_casi = lm(casi_total ~ parta_a211, data = thesis_final)
+summary(parta_a211_fit_casi)
+
+parta_a211_fit_comt = lm(comt_total ~ parta_a211, data = thesis_final)
+summary(parta_a211_fit_comt)
+
+#parta_a212: 3 or more servings of tree nuts per week?
+parta_a212_fit_casi = lm(casi_total ~ parta_a212, data = thesis_final)
+summary(parta_a212_fit_casi)
+
+parta_a212_fit_comt = lm(comt_total ~ parta_a212, data = thesis_final)
+summary(parta_a212_fit_comt)
+
+#parta_a213: Generally eat more chicken/turkey/rabbit compared to veal/pork/hamburger/sausage?
+parta_a213_fit_casi = lm(casi_total ~ parta_a213, data = thesis_final)
+summary(parta_a213_fit_casi)
+
+parta_a213_fit_comt = lm(comt_total ~ parta_a213, data = thesis_final)
+summary(parta_a213_fit_comt)
+
+#parta_a214: Season vegetables, pasta, rice iwth tomato, onion, leek, or garlic sauce 2 or more times per week?
+parta_a214_fit_casi = lm(casi_total ~ parta_a214, data = thesis_final)
+summary(parta_a214_fit_casi)
+
+parta_a214_fit_comt = lm(comt_total ~ parta_a214, data = thesis_final)
+summary(parta_a214_fit_comt)
 ```
 
 
-#### Linear regression for medi_score and casi_total
-
-```{r}
-linear_1 = lm(casi_total ~ medi_score, data = thesis_final)
-summary(linear_1)
-tbl_regression(linear_1)
-
-#linear regression including covariates
-linear_2 = lm(casi_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
-summary(linear_2)
-tbl_regression(linear_2)
-```
-
-
-#### Linear regression for medi_score and comt_total
-
-```{r}
-linear_3 = lm(comt_total ~ medi_score, data = thesis_final)
-summary(linear_3)
-tbl_regression(linear_3)
-
-#linear regression including covariates
-linear_4 = lm(comt_total ~ medi_score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
-summary(linear_4)
-tbl_regression(linear_4)
-```
-
-
-### Regression - medi continuous (parta_a2score)
-
-#### Logistic regression for parta_a2score and casi_tertiles
-
-```{r}
-logit_5 = glm(casi_tertiles ~ parta_a2score, data = thesis_final, family = "binomial")
-summary(logit_5)
-tbl_regression(logit_5, exponentiate = TRUE)
-#logistic regression including covariates
-
-logit_6 = glm(casi_tertiles ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
-summary(logit_6)
-tbl_regression(logit_6, exponentiate = TRUE)
-```
-
-#### Logistic regression for parta_a2score and comt_tertiles
-
-```{r}
-logit_7 = glm(comt_tertiles ~ parta_a2score, data = thesis_final, family = "binomial")
-summary(logit_7)
-tbl_regression(logit_7, exponentiate = TRUE)
-#logistic regression including covariates
-
-logit_8 = glm(comt_tertiles ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final, family = "binomial")
-summary(logit_8)
-tbl_regression(logit_8, exponentiate = TRUE)
-
-```
-
-#### Linear regression for parta_a2score and casi_total
-
-```{r}
-linear_5 = lm(casi_total ~ parta_a2score, data = thesis_final)
-summary(linear_5)
-tbl_regression(linear_5)
-
-#linear regression including covariates
-linear_6 = lm(casi_total ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
-summary(linear_6)
-tbl_regression(linear_6)
-```
-
-#### Linear regression for parta_a2score and comt_total
-
-```{r}
-linear_7 = lm(comt_total ~ parta_a2score, data = thesis_final)
-summary(linear_7)
-tbl_regression(linear_7)
-
-#linear regression including covariates
-linear_8 = lm(comt_total ~ parta_a2score + age + redcap_data_access_group + gender + immigration_years + degree + cholesterol + hypertension + diabetes, data = thesis_final)
-summary(linear_8)
-tbl_regression(linear_8)
-```
 
