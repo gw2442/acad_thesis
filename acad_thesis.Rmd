@@ -583,7 +583,7 @@ Logistic regression between clinical diagnosis (c14_secg) and medi_score
 #crude
 logit1 = glm(c14_secg ~ medi_score, data = thesis_final, family = "binomial")
 summary(logit1)
-tbl_regression(logit1)
+tbl_regression(logit1, exponentiate = TRUE)
 ```
 
 
@@ -691,100 +691,128 @@ tbl_regression(linear10_model_2)
 #parta_a201: Olive oil as main cooking fat?
 parta_a201_fit_casi = lm(casi_total ~ parta_a201, data = thesis_final)
 summary(parta_a201_fit_casi)
+tbl_regression(parta_a201_fit_casi)
 
 parta_a201_fit_comt = lm(comt_total ~ parta_a201, data = thesis_final)
 summary(parta_a201_fit_comt)
+tbl_regression(parta_a201_fit_comt)
 
 #parta_a202: More than 4 tablespoons of olive oil?
 parta_a202_fit_casi = lm(casi_total ~ parta_a202, data = thesis_final)
 summary(parta_a202_fit_casi)
+tbl_regression(parta_a202_fit_casi)
 
 parta_a202_fit_comt = lm(comt_total ~ parta_a202, data = thesis_final)
 summary(parta_a202_fit_comt)
+tbl_regression(parta_a202_fit_comt)
 
 #parta_a203: 2 or more servings of vegetable in a day?
 parta_a203_fit_casi = lm(casi_total ~ parta_a203, data = thesis_final)
 summary(parta_a203_fit_casi)
+tbl_regression(parta_a203_fit_casi)
 
 parta_a203_fit_comt = lm(comt_total ~ parta_a203, data = thesis_final)
 summary(parta_a203_fit_comt)
+tbl_regression(parta_a203_fit_comt)
 
 #parta_a204: 3 or more servings of fruit per day?
 parta_a204_fit_casi = lm(casi_total ~ parta_a204, data = thesis_final)
 summary(parta_a204_fit_casi)
+tbl_regression(parta_a204_fit_casi)
 
 parta_a204_fit_comt = lm(comt_total ~ parta_a204, data = thesis_final)
 summary(parta_a204_fit_comt)
+tbl_regression(parta_a204_fit_comt)
 
 #parta_a205: Butter, margarine, or cream less than once daily?
 parta_a205_fit_casi = lm(casi_total ~ parta_a205, data = thesis_final)
 summary(parta_a205_fit_casi)
+tbl_regression(parta_a205_fit_casi)
 
 parta_a205_fit_comt = lm(comt_total ~ parta_a205, data = thesis_final)
 summary(parta_a205_fit_comt)
+tbl_regression(parta_a205_fit_comt)
 
 #parta_a206: Beef, pork, or other meat less than daily?
 parta_a206_fit_casi = lm(casi_total ~ parta_a206, data = thesis_final)
 summary(parta_a206_fit_casi)
+tbl_regression(parta_a206_fit_casi)
 
 parta_a206_fit_comt = lm(comt_total ~ parta_a206, data = thesis_final)
 summary(parta_a206_fit_comt)
+tbl_regression(parta_a206_fit_comt)
 
 #parta_a207: Sweetened/carbonated beverages less often than daily?
 parta_a207_fit_casi = lm(casi_total ~ parta_a207, data = thesis_final)
 summary(parta_a207_fit_casi)
+tbl_regression(parta_a207_fit_casi)
 
 parta_a207_fit_comt = lm(comt_total ~ parta_a207, data = thesis_final)
 summary(parta_a207_fit_comt)
+tbl_regression(parta_a207_fit_comt)
 
 #parta_a208: At least 7 glasses of wine per week?
 parta_a208_fit_casi = lm(casi_total ~ parta_a208, data = thesis_final)
 summary(parta_a208_fit_casi)
+tbl_regression(parta_a208_fit_casi)
 
 parta_a208_fit_comt = lm(comt_total ~ parta_a208, data = thesis_final)
 summary(parta_a208_fit_comt)
+tbl_regression(parta_a208_fit_comt)
 
 #parta_a209: 3 or more servings of lentils, peas, beans, soybeans, or tofu/week?
 parta_a209_fit_casi = lm(casi_total ~ parta_a209, data = thesis_final)
 summary(parta_a209_fit_casi)
+tbl_regression(parta_a209_fit_casi)
 
 parta_a209_fit_comt = lm(comt_total ~ parta_a209, data = thesis_final)
 summary(parta_a209_fit_comt)
+tbl_regression(parta_a209_fit_comt)
 
 #parta_a210: 3 or more servings of fish/shellfish per week?
 parta_a210_fit_casi = lm(casi_total ~ parta_a210, data = thesis_final)
 summary(parta_a210_fit_casi)
+tbl_regression(parta_a210_fit_casi)
 
 parta_a210_fit_comt = lm(comt_total ~ parta_a210, data = thesis_final)
 summary(parta_a210_fit_comt)
+tbl_regression(parta_a210_fit_comt)
 
 #parta_a211: Fewer than 2 servings per week of sweets/pastries?
 parta_a211_fit_casi = lm(casi_total ~ parta_a211, data = thesis_final)
 summary(parta_a211_fit_casi)
+tbl_regression(parta_a211_fit_casi)
 
 parta_a211_fit_comt = lm(comt_total ~ parta_a211, data = thesis_final)
 summary(parta_a211_fit_comt)
+tbl_regression(parta_a211_fit_comt)
 
 #parta_a212: 3 or more servings of tree nuts per week?
 parta_a212_fit_casi = lm(casi_total ~ parta_a212, data = thesis_final)
 summary(parta_a212_fit_casi)
+tbl_regression(parta_a212_fit_casi)
 
 parta_a212_fit_comt = lm(comt_total ~ parta_a212, data = thesis_final)
 summary(parta_a212_fit_comt)
+tbl_regression(parta_a212_fit_comt)
 
 #parta_a213: Generally eat more chicken/turkey/rabbit compared to veal/pork/hamburger/sausage?
 parta_a213_fit_casi = lm(casi_total ~ parta_a213, data = thesis_final)
 summary(parta_a213_fit_casi)
+tbl_regression(parta_a213_fit_casi)
 
 parta_a213_fit_comt = lm(comt_total ~ parta_a213, data = thesis_final)
 summary(parta_a213_fit_comt)
+tbl_regression(parta_a213_fit_comt)
 
 #parta_a214: Season vegetables, pasta, rice iwth tomato, onion, leek, or garlic sauce 2 or more times per week?
 parta_a214_fit_casi = lm(casi_total ~ parta_a214, data = thesis_final)
 summary(parta_a214_fit_casi)
+tbl_regression(parta_a214_fit_casi)
 
 parta_a214_fit_comt = lm(comt_total ~ parta_a214, data = thesis_final)
 summary(parta_a214_fit_comt)
+tbl_regression(parta_a214_fit_comt)
 ```
 
 
