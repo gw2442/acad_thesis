@@ -370,6 +370,8 @@ thesis_final = thesis_final %>%
   )
 
 skimr::skim(thesis_final)
+
+write.csv(thesis_final, "thesis_final.csv", row.names = FALSE)
 ```
 
 Final cleaned dataset is comprised of 303 observations and 38 variables - 3 character, 10 factor, and 25 numeric.
@@ -581,6 +583,11 @@ Logistic regression between clinical diagnosis (c14_secg) and medi_score
 
 ```{r}
 #crude
+thesis_final = thesis_final %>%
+  mutate(
+    c14_secg = relevel(c14_secg, "Dementia (NACC)")
+  )
+
 logit1 = glm(c14_secg ~ medi_score, data = thesis_final, family = "binomial")
 summary(logit1)
 tbl_regression(logit1, exponentiate = TRUE)
