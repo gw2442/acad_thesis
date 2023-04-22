@@ -14,6 +14,7 @@ library(tableone)
 library(oddsratio)
 library(flextable)
 library(gtsummary)
+library(naniar)
 ```
 
 ## Importing and cleaning data
@@ -86,7 +87,7 @@ acad_dem = acad_dem %>%
   select(-arrival_year, -condition1, -condition2, -condition3, -condition4, -condition5, -condition6, -condition7, -condition8, -condition9, -condition10, -condition11, -condition12, -condition13, -condition14, -condition15) 
 ```
 
-Picking comobidities: 
+Picking comorbidities: 
 
 ```{r}
 acad_dem%>%
@@ -150,15 +151,32 @@ acad_dem %>%
   summarise(n_obs = n())
 ```
 
-Selected the top three comorbidities (cholesterol, hypertension, and diabetes). Dropped all remaining comorbidities. 
+Selected the cardiovascular comorbidities (cholesterol, hypertension, diabetes, myo_infarc, cong_heart_f, stroke). Created cardiovascular risk score from comorbidities.  
 
 ```{r}
 acad_dem = acad_dem %>%
+  select(-head_injury, -seizure, -hiv, -sleep_apnea, -sleep_disorder, -other_cog, -covid, -vac_covid, -kidney) 
+
+  acad_dem = acad_dem %>%
+    replace_with_na(replace = list (
+      cholesterol = c("55"),
+      hypertension = c("55"),
+      diabetes = c("55"),
+      myo_infarc = c("55"),
+      cong_heart_f = c("55"),
+      stroke = c("55")
+    )) %>%
   mutate(
-    cholesterol = factor(cholesterol, labels = c("No", "Yes", "Unsure")),
-    hypertension = factor(hypertension, labels = c("No", "Yes", "Unsure")),
-    diabetes = factor(diabetes, labels = c("No", "Yes", "Unsure"))) %>%
-select(-myo_infarc, -cong_heart_f, -stroke, -head_injury, -seizure, -hiv, -sleep_apnea, -sleep_disorder, -other_cog, -covid, -vac_covid, -kidney)
+    cardiovascular_risk = cholesterol + hypertension + diabetes + myo_infarc + cong_heart_f + stroke
+  ) %>%
+  mutate(
+    cholesterol = factor(cholesterol, labels = c("No", "Yes")),
+    hypertension = factor(hypertension, labels = c("No", "Yes")),
+    diabetes = factor(diabetes, labels = c("No", "Yes")),
+    myo_infarc = factor(myo_infarc, labels = c("No", "Yes")),
+    cong_heart_f = factor(cong_heart_f, labels = c("No", "Yes")),
+    stroke = factor(stroke, labels = c("No", "Yes")))
+
 ```
 
 Remove participants with no information other than ACAD ID or recruitment site (n = 22)
@@ -240,7 +258,7 @@ acad_cog = acad_clean %>%
   )
 ```
 
-Removing participants with zero entries for cognitive measures (only participants with at lesat one entry for a cognitive measure is included) (n = 22)
+Removing participants with zero entries for cognitive measures (only participants with at least one entry for a cognitive measure is included) (n = 22)
 
 ```{r}
 acad_cog = acad_cog %>%
@@ -309,7 +327,7 @@ dem_diet = inner_join(acad_dem, acad_diet, by = "acad_id")
 thesis_final = inner_join(dem_diet, acad_cog, by = "acad_id")
 ```
 
-Adding labels to final dataset
+Adding labels to final dataset and relabelling c14_overall
 
 ```{r}
 thesis_final = thesis_final %>%
@@ -349,32 +367,32 @@ thesis_final = thesis_final %>%
     comt_tertiles = factor(comt_tertiles, levels = c(
       "Low", "Medium", "High"
       )),
-    c14_overall = factor(c14_overall, labels = c(
-      "Normal control", 
-      "Scores below cutoff for dementia/insufficient functional impairment for dementia (possible dementia)", 
-      "Scores close to dementia/has functional impairment (possible dementia)", 
-      "Dementia by both cognitive testing in real time and history of functional loss", 
-      "Cognition intact; functional intact; has significant cognitive complaints (SCC)", 
-      "MCI or SCC")),
-    c14_overall = factor(c14_overall, levels = c(
-      "Normal control",
-      "Cognition intact; functional intact; has significant cognitive complaints (SCC)",
-      "MCI or SCC",
-      "Scores below cutoff for dementia/insufficient functional impairment for dementia (possible dementia)", 
-      "Scores close to dementia/has functional impairment (possible dementia)", 
-      "Dementia by both cognitive testing in real time and history of functional loss"
-    )),
+    c14_relabels = case_when(
+      c14_overall == 1 ~ 0,
+      c14_overall %in% c(5, 6) ~ 1,
+      c14_overall %in% c(2, 3, 4) ~ 2
+    ),
     c14_secg = factor(c14_secg, labels = c(
       "No Dementia (includes MCI and SCC)", 
       "Dementia (NACC)"))
-  )
+  ) %>%
+  select(-c14_overall) %>%
+  mutate(
+    c14_overall = factor(c14_relabels, labels = c(
+      "Normal",
+      "MCI",
+      "Dementia"
+    ))
+  ) %>%
+  select(-c14_relabels)
 
 skimr::skim(thesis_final)
+
 
 write.csv(thesis_final, "thesis_final.csv", row.names = FALSE)
 ```
 
-Final cleaned dataset is comprised of 303 observations and 38 variables - 3 character, 10 factor, and 25 numeric.
+Final cleaned dataset is comprised of 303 observations and 43 variables - 3 character, 13 factor, and 27 numeric.
 
 ## Data Analysis
 
@@ -390,7 +408,6 @@ Secondary outcome variables
 * c14_secg
 * cft 
 * fas 
-* clock_t (?)
 
 
 Covariates:
@@ -402,13 +419,14 @@ Covariates:
 * cholesterol
 * hypertension
 * diabetes
+* cardiovascular_risk
 
 ### Summary Tables 
 
 #### Overall demographic and clinical characteristic table
 
 ```{r}
-listVars1 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "casi_total", "comt_total", "comt_dr", "fas","cft", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+listVars1 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "parta_a2score", "medi_score", "casi_total", "comt_total", "comt_dr", "fas","cft", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes", "cardiovascular_risk")
 
 catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
@@ -422,7 +440,7 @@ print(table1, formatOption = list(big.mark = ","))
 * Did not include casi and comt tertiles 
 
 ```{r}
-listVars_2 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "casi_total", "comt_total","comt_dr", "fas", "cft","c14_overall", "c14_secg",  "cholesterol", "hypertension", "diabetes")
+listVars_2 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "casi_total", "comt_total","comt_dr", "fas", "cft","c14_overall", "c14_secg",  "cholesterol", "hypertension", "diabetes", "cardiovascular_risk")
 
 catVars = c("redcap_data_access_group", "gender", "country", "degree", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
@@ -434,7 +452,7 @@ print(table2, formatOptions = list(big.mark = ","))
 #### Demographic, clinical, and dietary characteristics for subjects by casi tertiles 
 
 ```{r}
-listVars_3 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "comt_total", "comt_dr", "fas", "cft","c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+listVars_3 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "parta_a2score","medi_score", "comt_total", "comt_dr", "fas", "cft","c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes", "cardiovascular_risk")
 
 catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
@@ -445,7 +463,7 @@ print(table3, formatOptions = list(big.mark = ","))
 
 #### Demographic, clinical, and dietary characteristics for subjects by comt tertiles
 ```{r}
-listVars_4 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "medi_score", "casi_total", "comt_dr", "fas", "cft", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
+listVars_4 = c("age", "redcap_data_access_group", "gender", "country", "immigration_years", "degree", "parta_a2score", "medi_score", "casi_total", "comt_dr", "fas", "cft", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes", "cardiovascular_risk")
 
 catVars = c("redcap_data_access_group", "gender", "country", "degree", "medi_score", "c14_overall", "c14_secg", "cholesterol", "hypertension", "diabetes")
 
