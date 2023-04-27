@@ -609,6 +609,10 @@ thesis_final = thesis_final %>%
 logit1 = glm(c14_secg ~ medi_score, data = thesis_final, family = "binomial")
 summary(logit1)
 tbl_regression(logit1, exponentiate = TRUE)
+
+logit2 = glm(c14_secg ~parta_a2score, data = thesis_final, family = "binomial")
+summary(logit2)
+tbl_regression(logit2, exponentiate = TRUE)
 ```
 
 
